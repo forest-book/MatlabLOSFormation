@@ -56,36 +56,36 @@ if (clientID>-1)
     [returnCode, QuadAng1] = sim.simxGetObjectOrientation(clientID1, Quad(1), -1, sim.simx_opmode_streaming);
     pause(0.1);
     % Get URG sensor data
-    [errorCode, dist] = sim.simxGetStringSignal(clientID1, 'scan ranges11', sim.simx_opmode_streaming);
-    [errorCode, dist] = sim.simxGetStringSignal(clientID1, 'scan ranges12', sim.simx_opmode_streaming);
+    [errorCode, dist] = sim.simxGetStringSignal(clientID1, 'scan_ranges11', sim.simx_opmode_streaming);
+    [errorCode, dist] = sim.simxGetStringSignal(clientID1, 'scan_ranges12', sim.simx_opmode_streaming);
     pause(0.1);
 
     [returnCode, QuadPos2] = sim.simxGetObjectPosition(clientID2, Quad(2), -1, sim.simx_opmode_streaming);
     [returnCode, QuadAng2] = sim.simxGetObjectOrientation(clientID2, Quad(2), -1, sim.simx_opmode_streaming);
     pause(0.1);
-    [errorCode, dist] = sim.simxGetStringSignal(clientID2, 'scan ranges21', sim.simx_opmode_streaming);
-    [errorCode, dist] = sim.simxGetStringSignal(clientID2, 'scan ranges22', sim.simx_opmode_streaming);
+    [errorCode, dist] = sim.simxGetStringSignal(clientID2, 'scan_ranges21', sim.simx_opmode_streaming);
+    [errorCode, dist] = sim.simxGetStringSignal(clientID2, 'scan_ranges22', sim.simx_opmode_streaming);
     pause(0.1);
 
     [returnCode, QuadPos3] = sim.simxGetObjectPosition(clientID3, Quad(3), -1, sim.simx_opmode_streaming);
     [returnCode, QuadAng3] = sim.simxGetObjectOrientation(clientID3, Quad(3), -1, sim.simx_opmode_streaming);
     pause(0.1);
-    [errorCode, dist] = sim.simxGetStringSignal(clientID3, 'scan ranges31', sim.simx_opmode_streaming);
-    [errorCode, dist] = sim.simxGetStringSignal(clientID3, 'scan ranges32', sim.simx_opmode_streaming);
+    [errorCode, dist] = sim.simxGetStringSignal(clientID3, 'scan_ranges31', sim.simx_opmode_streaming);
+    [errorCode, dist] = sim.simxGetStringSignal(clientID3, 'scan_ranges32', sim.simx_opmode_streaming);
     pause(0.1);
 
     [returnCode, QuadPos4] = sim.simxGetObjectPosition(clientID4, Quad(4), -1, sim.simx_opmode_streaming);
     [returnCode, QuadAng4] = sim.simxGetObjectOrientation(clientID4, Quad(4), -1, sim.simx_opmode_streaming);
     pause(0.1);    
-    [errorCode, dist] = sim.simxGetStringSignal(clientID4, 'scan ranges41', sim.simx_opmode_streaming);
-    [errorCode, dist] = sim.simxGetStringSignal(clientID4, 'scan ranges42', sim.simx_opmode_streaming);
+    [errorCode, dist] = sim.simxGetStringSignal(clientID4, 'scan_ranges41', sim.simx_opmode_streaming);
+    [errorCode, dist] = sim.simxGetStringSignal(clientID4, 'scan_ranges42', sim.simx_opmode_streaming);
     pause(0.1);
 
     [returnCode, QuadPos5] = sim.simxGetObjectPosition(clientID5, Quad(5), -1, sim.simx_opmode_streaming);
     [returnCode, QuadAng5] = sim.simxGetObjectOrientation(clientID5, Quad(5), -1, sim.simx_opmode_streaming);
     pause(0.1);
-    [errorCode, dist] = sim.simxGetStringSignal(clientID5, 'scan ranges51', sim.simx_opmode_streaming);
-    [errorCode, dist] = sim.simxGetStringSignal(clientID5, 'scan ranges52', sim.simx_opmode_streaming);
+    [errorCode, dist] = sim.simxGetStringSignal(clientID5, 'scan_ranges51', sim.simx_opmode_streaming);
+    [errorCode, dist] = sim.simxGetStringSignal(clientID5, 'scan_ranges52', sim.simx_opmode_streaming);
     pause(0.1);
 
     %% フォーメーション制御(以下の部分が処理のメイン)
@@ -296,8 +296,8 @@ if (clientID>-1)
         %% 通常の障害物検知 
 
         %リーダ機の障害物センサの値を取得する  
-        [errorCode, tmp_ranges1] = sim.simxGetStringSignal(Lnumber, ['scan ranges' num2str(Lnumber) '1'], sim.simx_opmode_buffer);
-        [errorCode, tmp_ranges2] = sim.simxGetStringSignal(Lnumber, ['scan ranges' num2str(Lnumber) '2'], sim.simx_opmode_buffer);
+        [errorCode, tmp_ranges1] = sim.simxGetStringSignal(Lnumber, ['scan_ranges' num2str(Lnumber) '1'], sim.simx_opmode_buffer);
+        [errorCode, tmp_ranges2] = sim.simxGetStringSignal(Lnumber, ['scan_ranges' num2str(Lnumber) '2'], sim.simx_opmode_buffer);
         %数値データに変換
         ranges1 = sim.simxUnpackFloats(tmp_ranges1);
         ranges2 = sim.simxUnpackFloats(tmp_ranges2);
@@ -311,8 +311,8 @@ if (clientID>-1)
 
         if obstacle_flag == 0 && current_formation == 1
             %最後尾のクワッドロータの障害物センサの値を取得
-            [errorCode, tmp_ranges1] = sim.simxGetStringSignal(find(Q.Att == 2), ['scan ranges' num2str(find(Q.Att == 2)) '1'], sim.simx_opmode_buffer);
-            [errorCode, tmp_ranges2] = sim.simxGetStringSignal(find(Q.Att == 2), ['scan ranges' num2str(find(Q.Att == 2)) '2'], sim.simx_opmode_buffer);
+            [errorCode, tmp_ranges1] = sim.simxGetStringSignal(find(Q.Att == 2), ['scan_ranges' num2str(find(Q.Att == 2)) '1'], sim.simx_opmode_buffer);
+            [errorCode, tmp_ranges2] = sim.simxGetStringSignal(find(Q.Att == 2), ['scan_ranges' num2str(find(Q.Att == 2)) '2'], sim.simx_opmode_buffer);
             %数値データに変換
             ranges1 = sim.simxUnpackFloats(tmp_ranges1);
             ranges2 = sim.simxUnpackFloats(tmp_ranges2);
