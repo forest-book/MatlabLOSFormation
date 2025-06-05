@@ -1,4 +1,5 @@
 # MatlabLOSFormation
+MATLABで書かれたコードをPythonへと書き換え
 
 ## 今回主に必要なライブラリ群
 >Numpy<br>
