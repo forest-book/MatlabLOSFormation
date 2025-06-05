@@ -1,7 +1,6 @@
 # MatlabLOSFormation
 
-<br>
-今回主に必要なライブラリ群
+## 今回主に必要なライブラリ群
 >Numpy<br>
 >Scipy<br>
 >Matplotlib<br>
