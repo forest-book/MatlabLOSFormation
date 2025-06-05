@@ -7,3 +7,6 @@
 # To deactivate an active environment, use
 #
 #     $ conda deactivate
+
+conda install -c conda-forge coppeliasim-zmqremoteapi-client
+conda install -c conda-forge control slycot
