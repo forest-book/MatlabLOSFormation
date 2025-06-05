@@ -8,5 +8,5 @@
 #
 #     $ conda deactivate
 
-conda install -c conda-forge coppeliasim-zmqremoteapi-client<b>
+conda install -c conda-forge coppeliasim-zmqremoteapi-client<br>
 conda install -c conda-forge control slycot
