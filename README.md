@@ -13,8 +13,8 @@
 特に苦戦しがちな**Python-control**,**slycot**,**coppeliasim-zmqremoteapi-client**の<br>
 condaコマンドでのインストール方法（他は特に問題なくできる）<br>
 ```
-conda install -c conda-forge coppeliasim-zmqremoteapi-client<br>
-conda install -c conda-forge control slycot<br>
+conda install -c conda-forge coppeliasim-zmqremoteapi-client
+conda install -c conda-forge control slycot
 ```
 
 ## 仮想環境の作成
