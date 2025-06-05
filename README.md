@@ -9,4 +9,6 @@
 #     $ conda deactivate
 
 conda install -c conda-forge coppeliasim-zmqremoteapi-client<br>
-conda install -c conda-forge control slycot
+conda install -c conda-forge control slycot<br>
+
+https://manual.coppeliarobotics.com/en/apiFunctions.htm
