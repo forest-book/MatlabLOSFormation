@@ -13,6 +13,7 @@ sim.startSimulation()
 
 try:
     object_name = "SphereTest"
+    # [/{オブジェクト名}のように、"/"をつけないとうまくいかない]
     object_handle = sim.getObject(f"/{object_name}")
 
     if object_handle == -1:
