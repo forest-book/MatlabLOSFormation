@@ -1,18 +1,19 @@
+import time
+
+# CoppeliaSimとの連携
 from coppeliasim_zmqremoteapi_client import RemoteAPIClient
 
 client = RemoteAPIClient()
-sim = client.require("sim")
+sim = client.getObject('sim')
 
 sim.setStepping(True)
 
+# シミュレーション開始
 sim.startSimulation()
-# while (t := sim.getSimulationTime()) < 10:
-#     print(f'Simulation time: {t:.2f} [s]')
-#     sim.step()
-
+time.sleep(0.1)
 
 try:
-    object_name = "SphereTest"
+    object_name = "Quadcopter[1]"
     # [/{オブジェクト名}のように、"/"をつけないとうまくいかない]
     object_handle = sim.getObject(f"/{object_name}")
 
