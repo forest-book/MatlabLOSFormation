@@ -1,34 +1,42 @@
+import time
 from coppeliasim_zmqremoteapi_client import RemoteAPIClient
 
+# CoppeliaSimに接続
 client = RemoteAPIClient()
-sim = client.require("sim")
+sim = client.getObject('sim')
 
-sim.setStepping(True)
-
-sim.startSimulation()
-# while (t := sim.getSimulationTime()) < 10:
-#     print(f'Simulation time: {t:.2f} [s]')
-#     sim.step()
-
+print('CoppeliaSimに接続しました。')
 
 try:
-    object_name = "SphereTest"
-    # [/{オブジェクト名}のように、"/"をつけないとうまくいかない]
-    object_handle = sim.getObject(f"/{object_name}")
+    # シミュレーションを開始
+    sim.startSimulation()
 
-    if object_handle == -1:
-        print(f"not found {object_name}")
-    else:
-        print(f"object handle about {object_name}: {object_handle}")
+    handle = sim.getObject("/Quadcopter[0]/fastHokuyo[0]")
 
-        position = sim.getObjectPosition(object_handle, -1)
-        if position:
-            print(type(position))
-            print(f"{object_name} position: x={position[0]:.4f}, y={position[1]:.4f}, z={position[2]:.4f}")
-        else:
-            print(f"faild get position about {object_name}")
+    # 10秒間データを取得し続けるループ
+    start_time = time.time()
+    packed_ranges11 = sim.readCustomDataBlock(handle,'scan_ranges11')
+    packed_ranges12 = sim.readCustomDataBlock(handle,'scan_ranges12')
+    while time.time() - start_time < 10:
+        # LiDARデータのシグナルをバイト列として取得
+        packed_ranges11 = sim.readCustomDataBlock(handle,'scan_ranges11')
+        packed_ranges12 = sim.readCustomDataBlock(handle,'scan_ranges12')
 
-except Exception as e:
-    print("error:", e)
+        # 取得したデータをアンパックして、Pythonのfloat型リストに変換
+        dist11 = client.unpackFloatTable(packed_ranges11) if packed_ranges11 else []
+        dist12 = client.unpackFloatTable(packed_ranges12) if packed_ranges12 else []
 
-sim.stopSimulation()
+        # 取得したデータを表示（最初の5点のみ）
+        print(f"Time: {time.time() - start_time:.2f}s | LiDAR 11 points: {len(dist11)} | LiDAR 12 points: {len(dist12)}")
+        if dist11:
+            print(f"  - dist11 (最初の5点): {[f'{d:.3f}' for d in dist11[:5]]}")
+        if dist12:
+            print(f"  - dist12 (最初の5点): {[f'{d:.3f}' for d in dist12[:5]]}")
+
+        # 0.1秒待機
+        time.sleep(0.1)
+
+finally:
+    # シミュレーションを停止
+    sim.stopSimulation()
+    print('シミュレーションを停止しました。')
