@@ -48,3 +48,4 @@ class Quadrotor:
         # 制御入力の単位方向ベクトル
         # MATLAB: Q.Cin_dir = zeros(3,loop_num+1,Quad_num);
         self.control_entry_dir = np.zeros((3, loop_num + 1, quad_num))
+        

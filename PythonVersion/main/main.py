@@ -4,6 +4,7 @@ import numpy as np
 
 # CoppeliaSimとの連携
 from coppeliasim_zmqremoteapi_client import RemoteAPIClient
+from losMethods import HelperMethod
 
 from quadrotor import Quadrotor
 
@@ -56,40 +57,40 @@ try:
     quadcopter0_position = sim.getObjectPosition(quadcopter_handles[0], -1)
     quadcopter0_orientation = sim.getObjectOrientation(quadcopter_handles[0], -1)
     time.sleep(0.1)
-    init_data = sim.sim.readCustomDataBlock(lidar_handles[0][0], 'scan_ranges11')
-    init_data = sim.sim.readCustomDataBlock(lidar_handles[0][1], 'scan_ranges12')
+    init_data = sim.readCustomDataBlock(lidar_handles[0][0], 'scan_ranges11')
+    init_data = sim.readCustomDataBlock(lidar_handles[0][1], 'scan_ranges12')
     time.sleep(0.1)
     
     # 二台目
     quadcopter1_position = sim.getObjectPosition(quadcopter_handles[1], -1)
     quadcopter1_orientation = sim.getObjectOrientation(quadcopter_handles[1], -1)
     time.sleep(0.1)
-    init_data = sim.sim.readCustomDataBlock(lidar_handles[1][0], 'scan_ranges21')
-    init_data = sim.sim.readCustomDataBlock(lidar_handles[1][1], 'scan_ranges22')
+    init_data = sim.readCustomDataBlock(lidar_handles[1][0], 'scan_ranges21')
+    init_data = sim.readCustomDataBlock(lidar_handles[1][1], 'scan_ranges22')
     time.sleep(0.1)
 
     # 三台目
     quadcopter2_position = sim.getObjectPosition(quadcopter_handles[2], -1)
     quadcopter2_orientation = sim.getObjectOrientation(quadcopter_handles[2], -1)
     time.sleep(0.1)
-    init_data = sim.sim.readCustomDataBlock(lidar_handles[2][0], 'scan_ranges31')
-    init_data = sim.sim.readCustomDataBlock(lidar_handles[2][1], 'scan_ranges32')
+    init_data = sim.readCustomDataBlock(lidar_handles[2][0], 'scan_ranges31')
+    init_data = sim.readCustomDataBlock(lidar_handles[2][1], 'scan_ranges32')
     time.sleep(0.1)
 
     # 四台目
     quadcopter3_position = sim.getObjectPosition(quadcopter_handles[3], -1)
     quadcopter3_orientation = sim.getObjectOrientation(quadcopter_handles[3], -1)
     time.sleep(0.1)
-    init_data = sim.sim.readCustomDataBlock(lidar_handles[3][0], 'scan_ranges41')
-    init_data = sim.sim.readCustomDataBlock(lidar_handles[3][1], 'scan_ranges42')
+    init_data = sim.readCustomDataBlock(lidar_handles[3][0], 'scan_ranges41')
+    init_data = sim.readCustomDataBlock(lidar_handles[3][1], 'scan_ranges42')
     time.sleep(0.1)
 
     # 五台目
     quadcopter4_position = sim.getObjectPosition(quadcopter_handles[4], -1)
     quadcopter4_orientation = sim.getObjectOrientation(quadcopter_handles[4], -1)
     time.sleep(0.1)
-    init_data = sim.sim.readCustomDataBlock(lidar_handles[4][0], 'scan_ranges51')
-    init_data = sim.sim.readCustomDataBlock(lidar_handles[4][1], 'scan_ranges52')
+    init_data = sim.readCustomDataBlock(lidar_handles[4][0], 'scan_ranges51')
+    init_data = sim.readCustomDataBlock(lidar_handles[4][1], 'scan_ranges52')
     time.sleep(0.1)
 
     # フォーメーション制御(以下の部分が処理のメイン)
@@ -185,29 +186,29 @@ try:
     AOR[3, :, 1] = [np.deg2rad(-140), np.deg2rad(0)]  # フォロワ4の回転角ΨとΦ
 
     # リーダーの初期座標
-    quadrotor[0, 0, 0] = -400  # x
-    quadrotor[1, 0, 0] = 0     # y
-    quadrotor[2, 0, 0] = 220   # z
+    quadrotor.coordinate[0, 0, 0] = -400  # x
+    quadrotor.coordinate[1, 0, 0] = 0     # y
+    quadrotor.coordinate[2, 0, 0] = 220   # z
 
     # フォロワー1
-    quadrotor[0, 0, 1] = -420
-    quadrotor[1, 0, 1] = -110
-    quadrotor[2, 0, 1] = 250
+    quadrotor.coordinate[0, 0, 1] = -420
+    quadrotor.coordinate[1, 0, 1] = -110
+    quadrotor.coordinate[2, 0, 1] = 250
 
     # フォロワー2
-    quadrotor[0, 0, 2] = -500
-    quadrotor[1, 0, 2] = -60
-    quadrotor[2, 0, 2] = 250
+    quadrotor.coordinate[0, 0, 2] = -500
+    quadrotor.coordinate[1, 0, 2] = -60
+    quadrotor.coordinate[2, 0, 2] = 250
 
     # フォロワー3
-    quadrotor[0, 0, 3] = -520
-    quadrotor[1, 0, 3] = 45
-    quadrotor[2, 0, 3] = 250
+    quadrotor.coordinate[0, 0, 3] = -520
+    quadrotor.coordinate[1, 0, 3] = 45
+    quadrotor.coordinate[2, 0, 3] = 250
 
     # フォロワー4
-    quadrotor[0, 0, 4] = -600
-    quadrotor[1, 0, 4] = -110
-    quadrotor[2, 0, 4] = 250
+    quadrotor.coordinate[0, 0, 4] = -600
+    quadrotor.coordinate[1, 0, 4] = -110
+    quadrotor.coordinate[2, 0, 4] = 250
 
     # リーダの目標地点の変更回数
     change_num = 2
@@ -234,7 +235,32 @@ try:
     local_axis = np.zeros(3, 3)
 
     # クワッドロータの初期座標をCoppeliaSimに反映している
-    
+    for i in range(0, quadcopter_counts):
+        sim.setObjectPosition(quadcopter_handles[i], (quadrotor.coordinate[:, 0, i] / 100).tolist(), -1)
+    sim.setObjectPosition(cylinder_handle, (goal_for_leader[:, 0] / 100).tolist(), -1)
+
+    # ステップ分ループを回す
+    for loop in range(0, simulation_time):
+        
+        # 実座標の取得
+        quadcopter0_position = sim.getObjectPosition(quadcopter_handles[0], -1)
+        quadcopter1_position = sim.getObjectPosition(quadcopter_handles[1], -1)
+        quadcopter2_position = sim.getObjectPosition(quadcopter_handles[2], -1)
+        quadcopter3_position = sim.getObjectPosition(quadcopter_handles[3], -1)
+        quadcopter4_position = sim.getObjectPosition(quadcopter_handles[4], -1)
+
+        quadrotor.coordinate[:, loop, 0] = quadcopter0_position * 100
+        quadrotor.coordinate[:, loop, 1] = quadcopter1_position * 100
+        quadrotor.coordinate[:, loop, 2] = quadcopter2_position * 100
+        quadrotor.coordinate[:, loop, 3] = quadcopter3_position * 100
+        quadrotor.coordinate[:, loop, 4] = quadcopter4_position * 100
+
+        # 初期状態でのリーダとフォロワの決定
+        if loop == 1:
+            quadrotor.attribute_num = HelperMethod.ChangeLeader(quadrotor, loop, quadcopter_counts, goal_for_leader, change_num)
+
+        # リーダ属性のクワッドロータの機体番号を取得
+        quad_leader_num = np.where(quadrotor.attribute_num == 1)[0][0]
 
 
 
