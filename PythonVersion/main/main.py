@@ -5,6 +5,8 @@ import numpy as np
 # CoppeliaSimとの連携
 from coppeliasim_zmqremoteapi_client import RemoteAPIClient
 
+from quadrotor import Quadrotor
+
 client = RemoteAPIClient()
 sim = client.getObject('sim')
 
@@ -145,6 +147,95 @@ try:
     #goal_for_leader[:, 0] = [500, -15, 250]
     goal_for_leader[:, 0] = [1100, -15, 250]
     goal_for_leader[:, 1] = [-650, -15, 300]
+
+    # クワッドロータのインスタンス
+    quadrotor = Quadrotor(quadcopter_counts, simulation_time)
+
+    # フォロワ間のベクトルを格納する配列
+    # フォロワ番号(属性番号の2以降に紐づく情報)
+    # VBF(vector between followers):フォロワ間のベクトル
+    # VBF_dir:VBFの単位ベクトル
+    VBF = np.zeros(3, simulation_time, quadcopter_counts - 1, quadcopter_counts - 1)
+    VBF_dir = np.zeros(3, simulation_time, quadcopter_counts - 1, quadcopter_counts - 1)
+
+    # 目標点に到達した時間を格納する配列
+    # arrive_timeに格納された時間を用いて目標点を表示する
+    arrive_time = np.zeros(goal_num, 1)
+
+    # 初期設定
+
+    # 属性番号の初期化
+    quadrotor.attribute_num = np.array([1, 2, 3, 4, 5])
+
+    # AOR(Angle of rotation):フォロワの追従位置を決定する角度
+    # 一列目がΨ,二列目がΦ
+    # ψがローカルでのz軸中心の回転 θがローカルでのx軸周りの回転
+    AOR = np.zeros(quadcopter_counts - 1, 2, formation_num)
+
+    # フォーメーション1
+    AOR[0, :, 0] = [np.deg2rad(180), np.deg2rad(0)]   # フォロワ1の回転角ΨとΦ
+    AOR[1, :, 0] = [np.deg2rad(180), np.deg2rad(0)]   # フォロワ2の回転角ΨとΦ
+    AOR[2, :, 0] = [np.deg2rad(180), np.deg2rad(0)]   # フォロワ3の回転角ΨとΦ
+    AOR[3, :, 0] = [np.deg2rad(180), np.deg2rad(0)]   # フォロワ4の回転角ΨとΦ
+
+    # フォーメーション2
+    AOR[0, :, 1] = [np.deg2rad(-140), np.deg2rad(0)]  # フォロワ1の回転角ΨとΦ
+    AOR[1, :, 1] = [np.deg2rad(140),  np.deg2rad(0)]  # フォロワ2の回転角ΨとΦ
+    AOR[2, :, 1] = [np.deg2rad(140),  np.deg2rad(0)]  # フォロワ3の回転角ΨとΦ
+    AOR[3, :, 1] = [np.deg2rad(-140), np.deg2rad(0)]  # フォロワ4の回転角ΨとΦ
+
+    # リーダーの初期座標
+    quadrotor[0, 0, 0] = -400  # x
+    quadrotor[1, 0, 0] = 0     # y
+    quadrotor[2, 0, 0] = 220   # z
+
+    # フォロワー1
+    quadrotor[0, 0, 1] = -420
+    quadrotor[1, 0, 1] = -110
+    quadrotor[2, 0, 1] = 250
+
+    # フォロワー2
+    quadrotor[0, 0, 2] = -500
+    quadrotor[1, 0, 2] = -60
+    quadrotor[2, 0, 2] = 250
+
+    # フォロワー3
+    quadrotor[0, 0, 3] = -520
+    quadrotor[1, 0, 3] = 45
+    quadrotor[2, 0, 3] = 250
+
+    # フォロワー4
+    quadrotor[0, 0, 4] = -600
+    quadrotor[1, 0, 4] = -110
+    quadrotor[2, 0, 4] = 250
+
+    # リーダの目標地点の変更回数
+    change_num = 2
+
+    # 全目標地点に到達した時点で停滞させるための座標
+    completed_coordinate = np.zeros(3, quadcopter_counts)
+
+    # 上記座標を取得するためのフラグ
+    is_completed = False
+
+    # 例外に到達したことを示すフラグ
+    is_exception_raised = False
+
+    # 例外時に停滞させるための座標
+    exception_coordinate = np.zeros(3, quadcopter_counts)
+
+    # 障害物センサ配列の要素数
+    stepnum = 684
+
+    # 障害物があるかの判定
+    is_obstacle = False
+
+    # ワールド座標系でみたローカル軸
+    local_axis = np.zeros(3, 3)
+
+    # クワッドロータの初期座標をCoppeliaSimに反映している
+    
+
 
 
 except Exception as e:
