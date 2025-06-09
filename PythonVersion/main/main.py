@@ -257,7 +257,7 @@ for loop in range(0, simulation_time):
 
     # 初期状態でのリーダとフォロワの決定
     if loop == 1:
-        quadrotor.attribute_num = HelperMethod.ChangeLeader(quadrotor, loop, quadcopter_counts, goal_for_leader, change_num)
+        quadrotor.attribute_num = HelperMethod.ChangeLeader(quadrotor, loop, quadcopter_counts, goal_for_leader, change_num - 1)
 
     # リーダ属性のクワッドロータの機体番号を取得
     quad_leader_num = np.where(quadrotor.attribute_num == 1)[0][0]
