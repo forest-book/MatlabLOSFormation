@@ -1,5 +1,7 @@
 import time
 
+import numpy as np
+
 # CoppeliaSimとの連携
 from coppeliasim_zmqremoteapi_client import RemoteAPIClient
 
@@ -87,7 +89,63 @@ try:
     init_data = sim.sim.readCustomDataBlock(lidar_handles[4][0], 'scan_ranges51')
     init_data = sim.sim.readCustomDataBlock(lidar_handles[4][1], 'scan_ranges52')
     time.sleep(0.1)
+
+    # フォーメーション制御(以下の部分が処理のメイン)
+    # 変数の規定(シミュレーション状況により変更する)
+
+    # ステップ数(シミュレーション時間)
+    simulation_time = 20000
+
+    # リーダ機の機体番号を格納(値は簡易的に1としている)
+    quad_leader_num = 1
+
+    # リーダを含めたクワッドローターの数
+    quadcopter_counts = 5
+
+    # 距離の閾値(侵入禁止領域の設定)
+    distance_threshold = 80
+
+    # 更新ステップ幅,Δt
+    dt = 1
+
+    # k0lはフォロワの目標速度(制御入力)の方向を計算する際のゲイン(k0,kl)
+    k01 = np.zeros((quadcopter_counts - 1, 2))
+    k01[0, :] = [5, 200]
+    k01[1, :] = [5, 200]
+    k01[2, :] = [5, 200]
+    k01[3, :] = [5, 200]
+
+    # kpsはフォロワの目標速度(制御入力)の大きさを計算する際のゲイン(kp,ks)
+    kps = np.zeros((quadcopter_counts - 1, 2))
+    kps[0, :] = [1, 1]
+    kps[1, :] = [1, 1]
+    kps[2, :] = [1, 1]
+    kps[3, :] = [1, 1]
     
+    # フォーメーションの数
+    formation_num = 2
+
+    # フォーメーションを指定(todo enumに書き換え)
+    current_formation = 2
+
+    # リーダと各フォロワの距離を規定
+    range_with_leader = np.zeros(quadcopter_counts - 1, 2)
+    range_with_leader[0, :] = [320, 240, 168, 80] # 直線フォーメーション
+    range_with_leader[1, :] = [200, 200, 100, 100] # V字フォーメーション
+
+    # リーダの目標点数
+    goal_num = 2
+
+    # リーダの速さ設定
+    leader_speed = 5
+
+    # リーダの目標到達地点
+    goal_for_leader = np.zeros(3, goal_num)
+
+    #goal_for_leader[:, 0] = [500, -15, 250]
+    goal_for_leader[:, 0] = [1100, -15, 250]
+    goal_for_leader[:, 1] = [-650, -15, 300]
+
 
 except Exception as e:
     print("error", e)
