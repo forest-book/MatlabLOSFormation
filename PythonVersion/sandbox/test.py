@@ -11,16 +11,17 @@ try:
     # シミュレーションを開始
     sim.startSimulation()
 
-    handle = sim.getObject("/Quadcopter[0]/fastHokuyo[0]")
+    handle11 = sim.getObject("/Quadcopter[0]/fastHokuyo[0]")
+    handle12 = sim.getObject("/Quadcopter[0]/fastHokuyo[1]")
 
     # 10秒間データを取得し続けるループ
     start_time = time.time()
-    packed_ranges11 = sim.readCustomDataBlock(handle,'scan_ranges11')
-    packed_ranges12 = sim.readCustomDataBlock(handle,'scan_ranges12')
+    packed_ranges11 = sim.readCustomDataBlock(handle11,'scan_ranges11')
+    packed_ranges12 = sim.readCustomDataBlock(handle12,'scan_ranges12')
     while time.time() - start_time < 10:
         # LiDARデータのシグナルをバイト列として取得
-        packed_ranges11 = sim.readCustomDataBlock(handle,'scan_ranges11')
-        packed_ranges12 = sim.readCustomDataBlock(handle,'scan_ranges12')
+        packed_ranges11 = sim.readCustomDataBlock(handle11,'scan_ranges11')
+        packed_ranges12 = sim.readCustomDataBlock(handle12,'scan_ranges12')
 
         # 取得したデータをアンパックして、Pythonのfloat型リストに変換
         dist11 = client.unpackFloatTable(packed_ranges11) if packed_ranges11 else []
