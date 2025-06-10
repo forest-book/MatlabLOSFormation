@@ -151,4 +151,32 @@ class HelperMethod:
         new_axis[:, 1] = R @ y_axis
         new_axis[:, 2] = R @ z_axis
         return new_axis
+    
+    @staticmethod
+    def rot(x, y, z, th):
+        """
+        ロドリゲスの回転公式による回転行列生成
+        x, y, z: 回転軸ベクトルの成分
+        th: 回転角（ラジアン）
+        """
+        # 軸ベクトルを正規化
+        axis = np.array([x, y, z], dtype=float)
+        axis = axis / np.linalg.norm(axis)
+        x, y, z = axis
+
+        I = np.eye(3)
+        # 直積行列
+        kron = np.array([
+            [x*x, x*y, x*z],
+            [x*y, y*y, y*z],
+            [x*z, y*z, z*z]
+        ])
+        # クロス積行列
+        Crossprd = np.array([
+            [0, -z, y],
+            [z, 0, -x],
+            [-y, x, 0]
+        ])
+        r = np.cos(th) * I + np.sin(th) * Crossprd + (1 - np.cos(th)) * kron
+        return r
 
