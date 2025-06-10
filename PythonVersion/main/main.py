@@ -282,12 +282,40 @@ for loop in range(0, simulation_time):
     leader_angle = sim.getObjectOrientation(quadcopter_handles[quad_leader_num], -1)
     time.sleep(0.05)
     # 障害物があるかの判定
-    is_obstacle = HelperMethod.ObstacleDetection()
+    is_obstacle = HelperMethod.ObstacleDetection(lidar_data1, lidar_data2, leader_angle, stepnum, quadrotor, simulation_time, quad_leader_num ,quadcopter_counts, is_obstacle, goal_for_leader[0:2, change_num])
 
     # チョークポイントを抜けたかの判定
     if not is_obstacle and current_formation == 1:
         # 最後尾のクワッドロータの障害物センサの値を取得
-        
+        tmp_packed_data1 = sim.readCustomDataBlock(lidar_handles[np.where(quadrotor.attribute_num == 2)][0], f'scan_ranges{np.where(quadrotor.attribute_num == 2)}1')
+        tmp_packed_data2 = sim.readCustomDataBlock(lidar_handles[np.where(quadrotor.attribute_num == 2)][1], f'scan_ranges{np.where(quadrotor.attribute_num == 2)}2')
+        # 数値データに変換
+        behind_lidar_data1 = client.unpackFloatTable(tmp_packed_data1) if tmp_packed_data1 else []
+        behind_lidar_data2 = client.unpackFloatTable(tmp_packed_data2) if tmp_packed_data2 else []
+        # 最後尾のクワッドロータの姿勢を取得
+        behind_angle = sim.getObjectOrientation(quadcopter_handles[np.where(quadrotor.attribute_num == 2)], -1)
+        time.sleep(0.05)
+        # 障害物があるかの判定
+        is_obstacle = HelperMethod.ObstacleDetection(behind_lidar_data1, behind_lidar_data2, behind_angle, stepnum, quadrotor, simulation_time, np.where(quadrotor.attribute_num == 2) ,quadcopter_counts, is_obstacle, goal_for_leader[0:2, change_num])
+    
+    # 障害物の有無によりフォーメーションを指定
+    if is_obstacle:
+        # フォーメーションを指定(一直線の形)
+        current_formation = 1
+    else:
+        current_formation = 2
+    
+    # リーダの処理
+    # {   
+    #    リーダ機の速さ及び単位ベクトルの格納
+    #    リーダ機の次ステップにおける座標の計算を行う
+    # }
+
+    # リーダから見た目標地点のベクトル
+    goal_distance = goal_for_leader[:, change_num] - quadrotor.coordinate[:, loop, quad_leader_num]
+    # リーダの速度を算出,計算の仕方は単位ベクトル×スカラーの速さ
+    quadrotor.speed[:, loop, quad_leader_num] = goal_distance / np.linalg.norm(goal_distance) * leader_speed
+    quadrotor.speed_dir
 
 
 
