@@ -113,4 +113,42 @@ class HelperMethod:
             obstacle_flag = False
 
         return obstacle_flag
+    
+    @staticmethod 
+    def axis_transform(speed_dir):
+        """
+        ワールド座標系でみたローカル座標軸を取得する関数
+        引数: 正規化されたリーダの速度 (np.array, shape=(3,))
+        戻り値: ワールド座標系でみたローカル座標軸 (np.array, shape=(3,3))
+        """
+        v = np.asarray(speed_dir).reshape(3)  # 速度ベクトル
+        x_axis = np.array([1, 0, 0])
+        y_axis = np.array([0, 1, 0])
+        z_axis = np.array([0, 0, 1])
+
+        # 回転軸（元のy軸と新しいy'軸の外積）
+        rotation_axis = np.cross(y_axis, v)
+        sin_theta = np.linalg.norm(rotation_axis)
+        cos_theta = np.dot(y_axis, v)
+        theta = np.arctan2(sin_theta, cos_theta)
+
+        # ゼロ除算回避
+        if sin_theta < 1e-8:
+            rotation_axis = np.array([0, 0, 1])  # 任意の軸
+        else:
+            rotation_axis = rotation_axis / sin_theta
+
+        # Rodriguesの回転公式
+        K = np.array([
+            [0, -rotation_axis[2], rotation_axis[1]],
+            [rotation_axis[2], 0, -rotation_axis[0]],
+            [-rotation_axis[1], rotation_axis[0], 0]
+        ])
+        R = np.eye(3) + np.sin(theta) * K + (1 - np.cos(theta)) * (K @ K)
+
+        new_axis = np.zeros((3, 3))
+        new_axis[:, 0] = R @ x_axis
+        new_axis[:, 1] = R @ y_axis
+        new_axis[:, 2] = R @ z_axis
+        return new_axis
 

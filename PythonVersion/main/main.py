@@ -315,7 +315,62 @@ for loop in range(0, simulation_time):
     goal_distance = goal_for_leader[:, change_num] - quadrotor.coordinate[:, loop, quad_leader_num]
     # リーダの速度を算出,計算の仕方は単位ベクトル×スカラーの速さ
     quadrotor.speed[:, loop, quad_leader_num] = goal_distance / np.linalg.norm(goal_distance) * leader_speed
-    quadrotor.speed_dir
+    quadrotor.speed_dir[:, loop, quad_leader_num] = quadrotor.speed[:, loop, quad_leader_num] / np.linalg.norm(quadrotor.speed[:, loop, quad_leader_num])
+
+    # リーダの次ステップでの座標を算出
+    quadrotor.coordinate[:, loop + 1, quad_leader_num] = quadrotor.coordinate[:, loop, quad_leader_num] + dt * quadrotor.speed[:, loop, quad_leader_num]
+
+    # ゼロ除算回避で0を直接代入している
+    quadrotor.relative_distance[:, loop, quad_leader_num] = 0
+    quadrotor.unit_relative_distance[0:2, loop, quad_leader_num] = 0
+
+    # フォロワの処理
+
+    # 通常動作の処理
+    if np.linalg.norm(goal_distance) > 30:
+        # {
+        #   フォロワから見たリーダのベクトル及び単位ベクトルを算出
+        #   属性番号がリーダである機体はゼロ除算を回避するために分岐させる
+        # }
+        for i in range(0, quadcopter_counts - 1):
+            quadrotor.relative_distance[:, loop, np.where(quadrotor.attribute_num == i + 1)] =  quadrotor.coordinate[:, loop, quad_leader_num] - quadrotor.coordinate[:, loop, np.where(quadrotor.attribute_num == i + 1)]
+            quadrotor.unit_relative_distance[0:2, loop, np.where(quadrotor.attribute_num == i + 1)] = quadrotor.relative_distance[0:2, loop, np.where(quadrotor.attribute_num == i + 1)] / np.linalg.norm(quadrotor.relative_distance[0:2, loop, np.where(quadrotor.attribute_num == i + 1)])       
+        
+        # {
+        #   フォロワ間のベクトルを算出(接近禁止領域の規定)
+        #   属性番号に紐づける
+        # }
+        for i in range(0, quadcopter_counts - 1):
+            for j in range(i + 1, quadcopter_counts - 1):
+                VBF[:, loop, j, i] = quadrotor.coordinate[:, loop, np.where(quadrotor.attribute_num == i + 1)] - quadrotor.coordinate[:, loop, np.where(quadrotor.attribute_num == j + 1)]
+                VBF_dir[0:2, loop, j, i] = VBF[0:2, loop, j, i] / np.linalg.norm(VBF[0:2, loop, j, i])
+
+        # フォロワ番号により条件確認の範囲が異なる処理
+
+        # {
+        #   フォロワ番号でループを回す
+        #   フォロワが条件を満たすかの判定はflagで行う
+        # }
+        for i in range(0, quadcopter_counts - 1):
+            flag = True
+            # フォロワ単体に関する処理は以下のforループと同じインデントで行う
+
+            # 他のフォロワとの距離が適切かの判定
+            for j in range(i + 1, quadcopter_counts - 1):
+                if np.linalg.norm(VBF[0:2, loop, j, i]) >= distance_threshold:
+                    flag = flag and True
+                else:
+                    flag = flag and False
+                    break
+            
+            # リーダとの距離が適切かの判定
+            if np.linalg.norm(quadrotor.relative_distance[0:2, loop, np.where(quadrotor.attribute_num == i + 1)]) >= distance_threshold:
+                flag = flag and True
+            else:
+                flag = flag and False
+            
+            local_axis = 
+
 
 
 
