@@ -384,6 +384,8 @@ for loop in range(0, simulation_time):
 
                 # 式(3.13)
                 h = k01[i, 0] + k01[i, 1] / (1 + np.linalg.norm(lt))
+                # 式(3.11)
+                
 
 
 
