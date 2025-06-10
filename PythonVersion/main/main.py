@@ -262,6 +262,34 @@ for loop in range(0, simulation_time):
     # リーダ属性のクワッドロータの機体番号を取得
     quad_leader_num = np.where(quadrotor.attribute_num == 1)[0][0]
 
+    # 障害物センサの処理
+    # {
+    #    ・基本的にはリーダの障害物センサの値のみを利用する
+    #    ・フォーメーションが1でリーダが障害物を検知しなければ最後尾の
+    #     クワッドロータの障害物センサの値を利用する
+    #    ・センサの最大値は4であり,4のデータは障害物が存在しない
+    #    ・フォロワと目標点も障害物センサに反応するため除外する
+    # }
+    # 通常の障害物検知
+
+    # リーダ機の障害物センサの値を取得する
+    packed_data1 = sim.readCustomDataBlock(lidar_handles[quad_leader_num][0], f'scan_ranges{quad_leader_num}1')
+    packed_data2 = sim.readCustomDataBlock(lidar_handles[quad_leader_num][1], f'scan_ranges{quad_leader_num}2')
+    # 数値データに変換
+    lidar_data1 = client.unpackFloatTable(packed_data1) if packed_data1 else []
+    lidar_data2 = client.unpackFloatTable(packed_data2) if packed_data2 else []
+    # リーダ機の姿勢の取得
+    leader_angle = sim.getObjectOrientation(quadcopter_handles[quad_leader_num], -1)
+    time.sleep(0.05)
+    # 障害物があるかの判定
+    is_obstacle = HelperMethod.ObstacleDetection()
+
+    # チョークポイントを抜けたかの判定
+    if not is_obstacle and current_formation == 1:
+        # 最後尾のクワッドロータの障害物センサの値を取得
+        
+
+
 
 
 # except Exception as e:

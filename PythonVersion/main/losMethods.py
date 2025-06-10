@@ -36,4 +36,81 @@ class HelperMethod:
         new_attribute[idx] = 1
 
         return new_attribute
+    
+    @staticmethod
+    def ObstacleDetection(ranges1, ranges2, QuadAng, stepnum, Q:Quadrotor, loop, Center_num, Quad_num, obstacle_flag, lg) -> bool:
+        # ranges1, ranges2: 1D np.array
+        # QuadAng: [roll, pitch, yaw]
+        # Q: dict with 'Coord' key, shape (3, loop_num+1, Quad_num)
+        # lg: 1D array, shape (2,) or (2,)
+
+        if ranges1 is None or len(ranges1) == 0:
+            ranges1 = np.zeros(stepnum)
+        if ranges2 is None or len(ranges2) == 0:
+            ranges2 = np.zeros(stepnum)
+
+        # 障害物が検知されたインデックス
+        index1 = np.where(ranges1 < 4)[0]
+        index2 = np.where(ranges2 < 4)[0]
+
+        # 検知値のみ抽出
+        valid_ranges1 = ranges1[ranges1 < 4]
+        valid_ranges2 = ranges2[ranges2 < 4]
+
+        # 判定対象の他ロボット番号
+        Quadindex = [i for i in range(Quad_num) if i != Center_num]
+
+        # センサ1
+        if valid_ranges1.size > 0:
+            obs_flags = []
+            for j, r in enumerate(valid_ranges1):
+                theta1 = 4/3 * np.pi / stepnum * (index1[j]) - np.pi/6 - np.pi/2 + QuadAng[2]
+                x = r * np.cos(theta1) + Q.coordinate[0, loop, Center_num] / 100 + 0.1
+                y = r * np.sin(theta1) + Q.coordinate[1, loop, Center_num] / 100
+                obs_Coord = np.array([x*100, y*100])
+                obsflag = 1
+                for k in Quadindex:
+                    if np.linalg.norm(obs_Coord - Q.coordinate[0:2, loop, k]) > 100:
+                        obsflag = obsflag & 1
+                    else:
+                        obsflag = obsflag & 0
+                if np.linalg.norm(obs_Coord - lg[0:2]) > 100:
+                    obsflag = obsflag & 1
+                else:
+                    obsflag = obsflag & 0
+                obs_flags.append(obsflag)
+            if np.sum(obs_flags) > 0:
+                obstacle_flag = True
+            else:
+                obstacle_flag = False
+        else:
+            obstacle_flag = 0
+
+        # センサ2
+        if valid_ranges2.size > 0:
+            obs_flags = []
+            for j, r in enumerate(valid_ranges2):
+                theta2 = 4/3 * np.pi / stepnum * (index2[j]) - np.pi/6 + np.pi/2 + QuadAng[2]
+                x = r * np.cos(theta2) + Q.coordinate[0, loop, Center_num] / 100 - 0.1
+                y = r * np.sin(theta2) + Q.coordinate[1, loop, Center_num] / 100
+                obs_Coord = np.array([x*100, y*100])
+                obsflag = 1
+                for k in Quadindex:
+                    if np.linalg.norm(obs_Coord - Q.coordinate[0:2, loop, k]) > 100:
+                        obsflag = obsflag & 1
+                    else:
+                        obsflag = obsflag & 0
+                if np.linalg.norm(obs_Coord - lg[0:2]) > 100:
+                    obsflag = obsflag & 1
+                else:
+                    obsflag = obsflag & 0
+                obs_flags.append(obsflag)
+            if np.sum(obs_flags) > 0:
+                obstacle_flag = obstacle_flag or True
+            else:
+                obstacle_flag = obstacle_flag or False
+        else:
+            obstacle_flag = False
+
+        return obstacle_flag
 
