@@ -385,7 +385,12 @@ for loop in range(0, simulation_time):
                 # 式(3.13)
                 h = k01[i, 0] + k01[i, 1] / (1 + np.linalg.norm(lt))
                 # 式(3.11)
-                
+                quadrotor.control_entry_dir[loop, np.where(quadrotor.attribute_num == i + 1)] = (lt + h * quadrotor.speed_dir[:, loop, quad_leader_num]) \
+                                                                                                    / np.linalg.norm((lt + h * quadrotor.speed_dir[:, loop, quad_leader_num]))
+                # 式(3.14)
+                quadrotor.control_entry[loop, np.where(quadrotor.attribute_num == i + 1)] = np.linalg.norm(quadrotor.speed[:, loop, quad_leader_num]) \
+                                                                                            * (1 + (2/np.pi) * kps[i, 0] * np.arctan(np.abs(np.dot(lt, quadrotor.speed_dir[:, loop, quad_leader_num]))))
+                # 最終的な速度の計算
 
 
 
