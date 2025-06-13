@@ -288,16 +288,16 @@ for loop in range(0, simulation_time):
     # チョークポイントを抜けたかの判定
     if not is_obstacle and current_formation == 1:
         # 最後尾のクワッドロータの障害物センサの値を取得
-        tmp_packed_data1 = sim.readCustomDataBlock(lidar_handles[np.where(quadrotor.attribute_num == 2)][0], f'scan_ranges{np.where(quadrotor.attribute_num == 2)}1')
-        tmp_packed_data2 = sim.readCustomDataBlock(lidar_handles[np.where(quadrotor.attribute_num == 2)][1], f'scan_ranges{np.where(quadrotor.attribute_num == 2)}2')
+        tmp_packed_data1 = sim.readCustomDataBlock(lidar_handles[np.where(quadrotor.attribute_num == 2)[0][0]][0], f'scan_ranges{np.where(quadrotor.attribute_num == 2)[0][0]}1')
+        tmp_packed_data2 = sim.readCustomDataBlock(lidar_handles[np.where(quadrotor.attribute_num == 2)[0][0]][1], f'scan_ranges{np.where(quadrotor.attribute_num == 2)[0][0]}2')
         # 数値データに変換
         behind_lidar_data1 = client.unpackFloatTable(tmp_packed_data1) if tmp_packed_data1 else []
         behind_lidar_data2 = client.unpackFloatTable(tmp_packed_data2) if tmp_packed_data2 else []
         # 最後尾のクワッドロータの姿勢を取得
-        behind_angle = sim.getObjectOrientation(quadcopter_handles[np.where(quadrotor.attribute_num == 2)], -1)
+        behind_angle = sim.getObjectOrientation(quadcopter_handles[np.where(quadrotor.attribute_num == 2)[0][0]], -1)
         time.sleep(0.05)
         # 障害物があるかの判定
-        is_obstacle = HelperMethod.ObstacleDetection(behind_lidar_data1, behind_lidar_data2, behind_angle, stepnum, quadrotor, simulation_time, np.where(quadrotor.attribute_num == 2) ,quadcopter_counts, is_obstacle, goal_for_leader[0:2, change_num])
+        is_obstacle = HelperMethod.ObstacleDetection(behind_lidar_data1, behind_lidar_data2, behind_angle, stepnum, quadrotor, simulation_time, np.where(quadrotor.attribute_num == 2)[0][0] ,quadcopter_counts, is_obstacle, goal_for_leader[0:2, change_num])
     
     # 障害物の有無によりフォーメーションを指定
     if is_obstacle:
@@ -334,10 +334,10 @@ for loop in range(0, simulation_time):
         #   属性番号がリーダである機体はゼロ除算を回避するために分岐させる
         # }
         for i in range(0, quadcopter_counts - 1):
-            quadrotor.relative_distance[:, loop, np.where(quadrotor.attribute_num == i + 1)] =  quadrotor.coordinate[:, loop, quad_leader_num] \
-                                                                                                - quadrotor.coordinate[:, loop, np.where(quadrotor.attribute_num == i + 1)]
-            quadrotor.unit_relative_distance[0:2, loop, np.where(quadrotor.attribute_num == i + 1)] = quadrotor.relative_distance[0:2, loop, np.where(quadrotor.attribute_num == i + 1)] \
-                                                                                                        / np.linalg.norm(quadrotor.relative_distance[0:2, loop, np.where(quadrotor.attribute_num == i + 1)])       
+            quadrotor.relative_distance[:, loop, np.where(quadrotor.attribute_num == i + 1)[0][0]] =  quadrotor.coordinate[:, loop, quad_leader_num] \
+                                                                                                - quadrotor.coordinate[:, loop, np.where(quadrotor.attribute_num == i + 1)[0][0]]
+            quadrotor.unit_relative_distance[0:2, loop, np.where(quadrotor.attribute_num == i + 1)[0][0]] = quadrotor.relative_distance[0:2, loop, np.where(quadrotor.attribute_num == i + 1)[0][0]] \
+                                                                                                        / np.linalg.norm(quadrotor.relative_distance[0:2, loop, np.where(quadrotor.attribute_num == i + 1)[0][0]])       
         
         # {
         #   フォロワ間のベクトルを算出(接近禁止領域の規定)
@@ -346,7 +346,7 @@ for loop in range(0, simulation_time):
         for i in range(0, quadcopter_counts - 1):
             for j in range(i + 1, quadcopter_counts - 1):
                 VBF[:, loop, j, i] = quadrotor.coordinate[:, loop, np.where(quadrotor.attribute_num == i + 1)[0][0]] \
-                - quadrotor.coordinate[:, loop, np.where(quadrotor.attribute_num == j + 1)]
+                - quadrotor.coordinate[:, loop, np.where(quadrotor.attribute_num == j + 1)[0][0]]
                 VBF_dir[0:2, loop, j, i] = VBF[0:2, loop, j, i] / np.linalg.norm(VBF[0:2, loop, j, i])
 
         # フォロワ番号により条件確認の範囲が異なる処理
