@@ -395,7 +395,7 @@ for loop in range(0, simulation_time):
                                                                                         * quadrotor.control_entry_dir[:, loop, np.where(quadrotor.attribute_num == i + 1)]
                 
             # リーダとフォロワの回避関係
-            
+            quadrotor.unit_relative_distance[0:2, loop, ]
 
 
 
