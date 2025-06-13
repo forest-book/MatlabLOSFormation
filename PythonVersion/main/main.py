@@ -238,6 +238,7 @@ local_axis = np.zeros((3, 3))
 for i in range(0, quadcopter_counts):
     sim.setObjectPosition(quadcopter_handles[i], (quadrotor.coordinate[:, 0, i] / 100).tolist(), -1)
 sim.setObjectPosition(cylinder_handle, (goal_for_leader[:, 0] / 100).tolist(), -1)
+sim.step()
 
 # ステップ分ループを回す
 for loop in range(0, simulation_time):
@@ -344,7 +345,7 @@ for loop in range(0, simulation_time):
         # }
         for i in range(0, quadcopter_counts - 1):
             for j in range(i + 1, quadcopter_counts - 1):
-                VBF[:, loop, j, i] = quadrotor.coordinate[:, loop, np.where(quadrotor.attribute_num == i + 1)] \
+                VBF[:, loop, j, i] = quadrotor.coordinate[:, loop, np.where(quadrotor.attribute_num == i + 1)[0][0]] \
                 - quadrotor.coordinate[:, loop, np.where(quadrotor.attribute_num == j + 1)]
                 VBF_dir[0:2, loop, j, i] = VBF[0:2, loop, j, i] / np.linalg.norm(VBF[0:2, loop, j, i])
 
@@ -367,7 +368,7 @@ for loop in range(0, simulation_time):
                     break
             
             # リーダとの距離が適切かの判定
-            if np.linalg.norm(quadrotor.relative_distance[0:2, loop, np.where(quadrotor.attribute_num == i + 1)]) >= distance_threshold:
+            if np.linalg.norm(quadrotor.relative_distance[0:2, loop, np.where(quadrotor.attribute_num == i + 1)[0][0]]) >= distance_threshold:
                 flag = flag and True
             else:
                 flag = flag and False
@@ -380,24 +381,99 @@ for loop in range(0, simulation_time):
                     * HelperMethod.rot(local_axis[0,2], local_axis[1,2], local_axis[2,2], AOR[i, 0, current_formation]) \
                     * quadrotor.speed_dir[:, loop, quad_leader_num]
                 # フォロワからみた目標地点へのベクトル
-                lt = quadrotor.coordinate[:, loop, quad_leader_num] - quadrotor.coordinate[:, loop, np.where(quadrotor.attribute_num == i + 1)] + D
+                lt = quadrotor.coordinate[:, loop, quad_leader_num] - quadrotor.coordinate[:, loop, np.where(quadrotor.attribute_num == i + 1)[0][0]] + D
 
                 # 式(3.13)
                 h = k01[i, 0] + k01[i, 1] / (1 + np.linalg.norm(lt))
                 # 式(3.11)
-                quadrotor.control_entry_dir[:, loop, np.where(quadrotor.attribute_num == i + 1)] = (lt + h * quadrotor.speed_dir[:, loop, quad_leader_num]) \
+                quadrotor.control_entry_dir[:, loop, np.where(quadrotor.attribute_num == i + 1)[0][0]] = (lt + h * quadrotor.speed_dir[:, loop, quad_leader_num]) \
                                                                                                     / np.linalg.norm((lt + h * quadrotor.speed_dir[:, loop, quad_leader_num]))
                 # 式(3.14) なぜabsをarctanでとっているのかを要調査
-                quadrotor.control_entry[loop, np.where(quadrotor.attribute_num == i + 1)] = np.linalg.norm(quadrotor.speed[:, loop, quad_leader_num]) \
+                quadrotor.control_entry[loop, np.where(quadrotor.attribute_num == i + 1)[0][0]] = np.linalg.norm(quadrotor.speed[:, loop, quad_leader_num]) \
                                                                                             * (1 + (2/np.pi) * kps[i, 0] * np.arctan(np.abs(np.dot(lt, quadrotor.speed_dir[:, loop, quad_leader_num]) / kps[i, 1])))
                 # 最終的な速度の計算
-                quadrotor.speed[:,loop, np.where(quadrotor.attribute_num == i + 1)] = quadrotor.control_entry[loop, np.where(quadrotor.attribute_num == i + 1)] \
-                                                                                        * quadrotor.control_entry_dir[:, loop, np.where(quadrotor.attribute_num == i + 1)]
+                quadrotor.speed[:, loop, np.where(quadrotor.attribute_num == i + 1)[0][0]] = quadrotor.control_entry[loop, np.where(quadrotor.attribute_num == i + 1)[0][0]] \
+                                                                                        * quadrotor.control_entry_dir[:, loop, np.where(quadrotor.attribute_num == i + 1)[0][0]]
                 
             # リーダとフォロワの回避関係
-            quadrotor.unit_relative_distance[0:2, loop, ]
+            quadrotor.unit_relative_distance[0:2, loop, np.where(quadrotor.attribute_num == i + 1)[0][0]] = quadrotor.relative_distance[0:2, loop, np.where(quadrotor.attribute_num == i + 1)[0][0]] \
+                                                                                                            / np.linalg.norm(quadrotor.relative_distance[0:2, loop, np.where(quadrotor.attribute_num == i + 1)[0][0]])
+            
+            # リーダに近づきすぎた時の処理
+            if np.linalg.norm(quadrotor.relative_distance[0:2, loop, np.where(quadrotor.attribute_num == i + 1)[0][0]]) < distance_threshold:
+                # normの前の-1はdistanceをどちらを起点にするかによって必要か変わる
+                quadrotor.speed[0:2, loop, np.where(quadrotor.attribute_num == i + 1)[0][0]] = -1 * np.linalg.norm(quadrotor.speed[0:2, loop, quad_leader_num]) \
+                                                                                                * quadrotor.unit_relative_distance[0:2, loop, np.where(quadrotor.attribute_num == i + 1)[0][0]]
+                quadrotor.speed[2, loop, np.where(quadrotor.attribute_num == i + 1)[0][0]] = 0
+            
+        # フォロワ同士の回避アルゴリズム(若い番号が回避するとする)
+        # 他のフォロワとの距離が適正であるかの判別,フォロワ番号でループを回す
+        for j in range(0, quadcopter_counts - 1):
+            for k in range(j + 1, quadcopter_counts - 1):
+                if np.linalg.norm(VBF[0:2, loop, k, j]) < distance_threshold:
+                    quadrotor.speed[0:2, loop, np.where(quadrotor.attribute_num == j + 1)[0][0]] = np.linalg.norm(quadrotor.speed[0:2, loop, np.where(quadrotor.attribute_num == k + 1)[0][0]]) \
+                                                                                                    * VBF_dir[0:2, loop, k, j]
+                    quadrotor.speed[2, loop, np.where(quadrotor.attribute_num == j + 1)[0][0]] = 0
+        
+        # 各機体の次の座標の計算と各機体が一直線に並んでいる状態でリーダ時の処理(折り返しのアルゴリズム)
+        # フォロワ番号でループ
+        for k in range(0, quadcopter_counts - 1):
+            # 全フォロワの次の座標を算出
+            quadrotor.coordinate[:, loop + 1, np.where(quadrotor.attribute_num == k + 1)[0][0]] = quadrotor.coordinate[:, loop, np.where(quadrotor.attribute_num == k + 1)[0][0]] \
+                                                                                                    + dt * quadrotor.speed[:, loop, np.where(quadrotor.attribute_num == k + 1)[0][0]]
+        
+    elif np.linalg.norm(goal_distance) <= 30:
+        # 目標地点到達した時間を記録(目標地点を表示する際に使用)
+        arrive_time[change_num, 0] = loop
+        # 次の目標地点移る
+        change_num = change_num + 1
+        # フォーメーションの指定
+        current_formation = 2
 
+        # {
+        #   分岐1:全目標地点に到達
+        #       最初に全目標地点に到達した時の座標を保存する(停留のため)
+        #   分岐2:全目標地点に到達していない
+        #       属性を再定義し,1ステップ停留させる
+        #       次の目標地点に向かう
+        # }
+        if change_num >= goal_for_leader + 1:
+            # 停留座標の取得
+            if not is_completed:
+                for i in range(0, quadcopter_counts):
+                    completed_coordinate[:, i] = quadrotor.coordinate[:, loop, i]
+            
+            is_completed = True
+            change_num = change_num - 1
 
+        else:
+            quadrotor.attribute_num[:] = HelperMethod.ChangeLeader(quadrotor, loop, quadcopter_counts, goal_for_leader, change_num)
+            for i in range(0, quadcopter_counts):
+                completed_coordinate[:, i] = quadrotor.coordinate[:, loop, i]
+        
+        # 次のステップでの座標
+        for i in range(0, quadcopter_counts):
+            quadrotor.coordinate[:, loop + 1, i] = completed_coordinate[:, i]
+        
+    # 例外が発生した場合には全クワッドロータの動きを止める
+    else:
+        # 最初に例外になった時の座標を保存する(停留のため)
+        if not is_exception_raised:
+            for k in range(0, quadcopter_counts):
+                exception_coordinate[:, k] = quadrotor.coordinate[:, k]
+            is_exception_raised = True
+        
+        # 全クワッドローダーを停留させる
+        for k in range(0, quadcopter_counts):
+            quadrotor.speed[:, loop:simulation_time + 1, k] = np.zeros((3, simulation_time - loop + 1))
+            quadrotor.coordinate[:, loop + 1, k] = exception_coordinate[:, k]
+    
+    # CoppeliaSimへの反映
+    for i in range(0, quadcopter_counts):
+        sim.setObjectPosition(quadcopter_handles[i], (quadrotor.coordinate[:, loop + 1, i] / 100).tolist(), -1)
+    sim.setObjectPosition(cylinder_handle, (goal_for_leader[:, change_num] / 100).tolist(), -1)
+    sim.step()
+    time.sleep(0.05)
 
 
 
