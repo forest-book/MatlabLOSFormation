@@ -211,7 +211,7 @@ quadrotor.coordinate[1, 0, 4] = -110
 quadrotor.coordinate[2, 0, 4] = 250
 
 # リーダの目標地点の変更回数
-change_num = 2
+change_num = 1
 
 # 全目標地点に到達した時点で停滞させるための座標
 completed_coordinate = np.zeros((3, quadcopter_counts))
