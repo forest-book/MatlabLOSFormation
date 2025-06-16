@@ -390,11 +390,6 @@ for loop in range(0, simulation_time):
                 D = range_with_leader[i, current_formation - 1] * (R1 @ R2 @ v)
                 # フォロワからみた目標地点へのベクトル
                 lt = quadrotor.coordinate[:, loop, quad_leader_num] - quadrotor.coordinate[:, loop, follower_idx] + D
-                print(np.shape(quadrotor.coordinate[:, loop, np.where(quadrotor.attribute_num == i + 2)[0][0]]))
-                print(np.shape(quadrotor.coordinate[:, loop, quad_leader_num]))
-                print(np.shape(lt))
-                print(np.shape(quadrotor.speed_dir[:, loop, quad_leader_num]))
-                print(np.shape(quadrotor.control_entry_dir[:, loop, np.where(quadrotor.attribute_num == i + 2)[0][0]]))
                 # 式(3.13)
                 h = k01[i, 0] + k01[i, 1] / (1 + np.linalg.norm(lt))
                 # 式(3.11)
