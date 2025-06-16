@@ -50,8 +50,8 @@ class HelperMethod:
             ranges2 = np.zeros(stepnum)
 
         # 障害物が検知されたインデックス
-        index1 = np.where(ranges1 < 4)[0][0]
-        index2 = np.where(ranges2 < 4)[0][0]
+        index1 = np.where(ranges1 < 4)[0]
+        index2 = np.where(ranges2 < 4)[0]
         # 検知値のみ抽出
         valid_ranges1 = ranges1[ranges1 < 4]
         valid_ranges2 = ranges2[ranges2 < 4]
