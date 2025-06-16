@@ -377,6 +377,11 @@ for loop in range(0, simulation_time):
             
             local_axis = HelperMethod.axis_transform(quadrotor.speed_dir[:, loop, quad_leader_num])
 
+            # ループ変数 i (0..3) に対応するフォロワーの属性番号 (2..5)
+            follower_attribute_num = i + 2 
+            # その属性番号を持つ機体の現在のインデックスを取得
+            follower_idx = np.where(quadrotor.attribute_num == follower_attribute_num)[0][0]
+
             if flag:
                 # 回転ベクトル
                 R1 = HelperMethod.rot(local_axis[0,0], local_axis[1,0], local_axis[2,0], AOR[i, 1, current_formation - 1])
@@ -384,7 +389,7 @@ for loop in range(0, simulation_time):
                 v = quadrotor.speed_dir[:, loop, quad_leader_num]
                 D = range_with_leader[i, current_formation - 1] * (R1 @ R2 @ v)
                 # フォロワからみた目標地点へのベクトル
-                lt = quadrotor.coordinate[:, loop, quad_leader_num] - quadrotor.coordinate[:, loop, np.where(quadrotor.attribute_num == i + 2)[0][0]] + D
+                lt = quadrotor.coordinate[:, loop, quad_leader_num] - quadrotor.coordinate[:, loop, follower_idx] + D
                 print(np.shape(quadrotor.coordinate[:, loop, np.where(quadrotor.attribute_num == i + 2)[0][0]]))
                 print(np.shape(quadrotor.coordinate[:, loop, quad_leader_num]))
                 print(np.shape(lt))
@@ -393,14 +398,14 @@ for loop in range(0, simulation_time):
                 # 式(3.13)
                 h = k01[i, 0] + k01[i, 1] / (1 + np.linalg.norm(lt))
                 # 式(3.11)
-                quadrotor.control_entry_dir[:, loop, np.where(quadrotor.attribute_num == i + 2)[0][0]] = (lt + h * quadrotor.speed_dir[:, loop, quad_leader_num]) \
+                quadrotor.control_entry_dir[:, loop, follower_idx] = (lt + h * quadrotor.speed_dir[:, loop, quad_leader_num]) \
                                                                                                     / np.linalg.norm((lt + h * quadrotor.speed_dir[:, loop, quad_leader_num]))
                 # 式(3.14) なぜabsをarctanでとっているのかを要調査
-                quadrotor.control_entry[loop, np.where(quadrotor.attribute_num == i + 1)[0][0]] = np.linalg.norm(quadrotor.speed[:, loop, quad_leader_num]) \
+                quadrotor.control_entry[loop, follower_idx] = np.linalg.norm(quadrotor.speed[:, loop, quad_leader_num]) \
                                                                                             * (1 + (2/np.pi) * kps[i, 0] * np.arctan(np.abs(np.dot(lt, quadrotor.speed_dir[:, loop, quad_leader_num]) / kps[i, 1])))
                 # 最終的な速度の計算
-                quadrotor.speed[:, loop, np.where(quadrotor.attribute_num == i + 1)[0][0]] = quadrotor.control_entry[loop, np.where(quadrotor.attribute_num == i + 1)[0][0]] \
-                                                                                        * quadrotor.control_entry_dir[:, loop, np.where(quadrotor.attribute_num == i + 1)[0][0]]
+                quadrotor.speed[:, loop, follower_idx] = quadrotor.control_entry[loop, follower_idx] \
+                                                            * quadrotor.control_entry_dir[:, loop, follower_idx]
                 
             # リーダとフォロワの回避関係
             idx = np.where(quadrotor.attribute_num == i + 1)[0][0]
