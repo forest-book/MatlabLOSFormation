@@ -20,103 +20,132 @@ class HelperMethod:
             gd[t, 0] = np.linalg.norm(lg[:, Change_num] - Q.coordinate[:, loop, t])
             gd[t, 1] = Q.attribute_num[t]
 
-        # 距離が大きい順にソート
-        # argsortは小さい順なので[::-1]で逆順
-        sort_idx = np.argsort(gd[:, 0])[::-1]
+        # 距離が小さい順にソート
+        sort_idx = np.argsort(gd[:, 0])
         gd_sorted = gd[sort_idx]
 
         new_attribute = np.zeros(Quad_num, dtype=int)
-        # 属性番号を再決定
+
+        # 一番近い機体をリーダー（属性番号1）に
+        leader_original_attr = gd_sorted[0, 1]
+        leader_idx = np.where(Q.attribute_num == leader_original_attr)[0][0]
+        new_attribute[leader_idx] = 1
+
+        # 残りの機体を距離が遠い順にフォロワーとして割り当て (属性2, 3, ...)
+        # gd_sortedは昇順(近い順)なので、後ろからループする
         for s in range(Quad_num - 1):
-            # Q['Att'] == gd_sorted[s, 1] のインデックスに s+2 を割り当て
-            idx = np.where(Q.attribute_num == gd_sorted[s, 1])[0][0]
-            new_attribute[idx] = s + 2
-        # 一番遠い機体をリーダー（属性番号1）に
-        idx = np.where(Q.attribute_num == gd_sorted[Quad_num - 1, 1])[0][0]
-        new_attribute[idx] = 1
+            # s=0: 最も遠い機体 (gd_sortedの末尾)
+            # s=1: 2番目に遠い機体
+            follower_original_attr = gd_sorted[Quad_num - 1 - s, 1]
+            follower_idx = np.where(Q.attribute_num == follower_original_attr)[0][0]
+            new_attribute[follower_idx] = s + 2 # 属性2, 3, 4, ...
 
         return new_attribute
     
     @staticmethod
-    def ObstacleDetection(ranges1, ranges2, QuadAng, stepnum, Q:Quadrotor, loop, Center_num, Quad_num, obstacle_flag, lg) -> bool:
-        # ranges1, ranges2: 1D np.array
-        # QuadAng: [roll, pitch, yaw]
-        # Q: dict with 'Coord' key, shape (3, loop_num+1, Quad_num)
-        # lg: 1D array, shape (2,) or (2,)
+    def ObstacleDetection(ranges1, ranges2, QuadAng, stepnum, Q:Quadrotor, loop, Center_num, Quad_num, lg) -> bool:
+        """
+        LiDARセンサー情報に基づき、障害物を検知する。
+        他のドローンや目標点は障害物から除外する。
 
+        Args:
+            ranges1 (list or np.array): センサー1の距離データ.
+            ranges2 (list or np.array): センサー2の距離データ.
+            QuadAng (list or np.array): 現在注目している機体の姿勢 [roll, pitch, yaw].
+            stepnum (int): センサーデータのステップ数.
+            Q (Quadrotor): 全機体の情報を持つクラスインスタンス.
+            loop (int): 現在のシミュレーションステップ.
+            Center_num (int): 現在注目している機体の機体番号 (0-indexed).
+            Quad_num (int): 全機体の数.
+            obstacle_flag (bool): (この関数内では未使用だが、呼び出し元の互換性のために残している).
+            lg (np.array): 現在の目標点の座標 (x, y).
+
+        Returns:
+            bool: 障害物が検知された場合はTrue、そうでなければFalse.
+        """
         if ranges1 is None or len(ranges1) == 0:
-            ranges1 = np.zeros(stepnum)
+            ranges1 = np.array([])
         else:
-            ranges1 = np.array(ranges1)  # 追加: list→np.ndarray変換
+            ranges1 = np.array(ranges1)
 
         if ranges2 is None or len(ranges2) == 0:
-            ranges2 = np.zeros(stepnum)
+            ranges2 = np.array([])
         else:
-            ranges2 = np.array(ranges2)  # 追加: list→np.ndarray変換
+            ranges2 = np.array(ranges2)
 
-        # 障害物が検知されたインデックス
+        # 障害物が検知されたインデックス (距離4m未満)
         index1 = np.where(ranges1 < 4)[0]
         index2 = np.where(ranges2 < 4)[0]
         # 検知値のみ抽出
-        valid_ranges1 = ranges1[ranges1 < 4]
-        valid_ranges2 = ranges2[ranges2 < 4]
+        valid_ranges1 = ranges1[index1]
+        valid_ranges2 = ranges2[index2]
 
-        # 判定対象の他ロボット番号
+        # 判定対象から自分自身を除いた他ロボットの番号
         Quadindex = [i for i in range(Quad_num) if i != Center_num]
 
-        # センサ1
+        # --- センサー1の障害物判定 ---
+        obstacle_flag1 = False
         if valid_ranges1.size > 0:
             obs_flags = []
             for j, r in enumerate(valid_ranges1):
-                theta1 = 4/3 * np.pi / stepnum * (index1[j]) - np.pi/6 - np.pi/2 + QuadAng[2]
+                # 検知点のワールド座標を計算
+                theta1 = (4/3 * np.pi / stepnum) * index1[j] - (np.pi / 6) - (np.pi / 2) + QuadAng[2]
                 x = r * np.cos(theta1) + Q.coordinate[0, loop, Center_num] / 100 + 0.1
                 y = r * np.sin(theta1) + Q.coordinate[1, loop, Center_num] / 100
-                obs_Coord = np.array([x*100, y*100])
-                obsflag = 1
+                obs_Coord = np.array([x * 100, y * 100])
+                
+                is_real_obstacle = True
+                # 他のドローンでないか確認
                 for k in Quadindex:
-                    if np.linalg.norm(obs_Coord - Q.coordinate[0:2, loop, k]) > 100:
-                        obsflag = obsflag & 1
-                    else:
-                        obsflag = obsflag & 0
-                if np.linalg.norm(obs_Coord - lg[0:2]) > 100:
-                    obsflag = obsflag & 1
-                else:
-                    obsflag = obsflag & 0
-                obs_flags.append(obsflag)
-            if np.sum(obs_flags) > 0:
-                obstacle_flag = True
-            else:
-                obstacle_flag = False
-        else:
-            obstacle_flag = 0
+                    if np.linalg.norm(obs_Coord - Q.coordinate[0:2, loop, k]) <= 100:
+                        is_real_obstacle = False
+                        break
+                if not is_real_obstacle:
+                    obs_flags.append(0)
+                    continue
 
-        # センサ2
+                # 目標点でないか確認
+                if np.linalg.norm(obs_Coord - lg[0:2]) <= 100:
+                    is_real_obstacle = False
+                
+                obs_flags.append(1 if is_real_obstacle else 0)
+
+            # １つでも真の障害物があればフラグを立てる
+            if np.sum(obs_flags) > 0:
+                obstacle_flag1 = True
+
+        # --- センサー2の障害物判定 ---
+        obstacle_flag2 = False
         if valid_ranges2.size > 0:
             obs_flags = []
             for j, r in enumerate(valid_ranges2):
-                theta2 = 4/3 * np.pi / stepnum * (index2[j]) - np.pi/6 + np.pi/2 + QuadAng[2]
+                # 検知点のワールド座標を計算
+                theta2 = (4/3 * np.pi / stepnum) * index2[j] - (np.pi / 6) + (np.pi / 2) + QuadAng[2]
                 x = r * np.cos(theta2) + Q.coordinate[0, loop, Center_num] / 100 - 0.1
                 y = r * np.sin(theta2) + Q.coordinate[1, loop, Center_num] / 100
-                obs_Coord = np.array([x*100, y*100])
-                obsflag = 1
-                for k in Quadindex:
-                    if np.linalg.norm(obs_Coord - Q.coordinate[0:2, loop, k]) > 100:
-                        obsflag = obsflag & 1
-                    else:
-                        obsflag = obsflag & 0
-                if np.linalg.norm(obs_Coord - lg[0:2]) > 100:
-                    obsflag = obsflag & 1
-                else:
-                    obsflag = obsflag & 0
-                obs_flags.append(obsflag)
-            if np.sum(obs_flags) > 0:
-                obstacle_flag = obstacle_flag or True
-            else:
-                obstacle_flag = obstacle_flag or False
-        else:
-            obstacle_flag = False
+                obs_Coord = np.array([x * 100, y * 100])
 
-        return obstacle_flag
+                is_real_obstacle = True
+                # 他のドローンでないか確認
+                for k in Quadindex:
+                    if np.linalg.norm(obs_Coord - Q.coordinate[0:2, loop, k]) <= 100:
+                        is_real_obstacle = False
+                        break
+                if not is_real_obstacle:
+                    obs_flags.append(0)
+                    continue
+
+                # 目標点でないか確認
+                if np.linalg.norm(obs_Coord - lg[0:2]) <= 100:
+                    is_real_obstacle = False
+
+                obs_flags.append(1 if is_real_obstacle else 0)
+
+            # １つでも真の障害物があればフラグを立てる
+            if np.sum(obs_flags) > 0:
+                obstacle_flag2 = True
+
+        return obstacle_flag1 or obstacle_flag2
     
     @staticmethod 
     def axis_transform(speed_dir):

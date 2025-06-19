@@ -100,7 +100,7 @@ time.sleep(0.1)
 simulation_time = 20000
 
 # リーダ機の機体番号を格納(値は簡易的に1としている)
-quad_leader_num = 1
+quad_leader_num = 0
 
 # リーダを含めたクワッドローターの数
 quadcopter_counts = 5
@@ -288,13 +288,13 @@ for loop in range(0, simulation_time):
     leader_angle = sim.getObjectOrientation(quadcopter_handles[quad_leader_num], -1)
     time.sleep(0.05)
     # 障害物があるかの判定
-    is_obstacle = HelperMethod.ObstacleDetection(lidar_data1, lidar_data2, leader_angle, stepnum, quadrotor, simulation_time, quad_leader_num ,quadcopter_counts, is_obstacle, goal_for_leader[0:2, change_num - 1])
-
+    is_obstacle = HelperMethod.ObstacleDetection(lidar_data1, lidar_data2, leader_angle, stepnum, quadrotor, simulation_time, quad_leader_num ,quadcopter_counts, goal_for_leader[0:2, change_num - 1])
+    print(is_obstacle)
     # チョークポイントを抜けたかの判定
     if not is_obstacle and current_formation == 1:
         # 最後尾のクワッドロータの障害物センサの値を取得
-        tmp_packed_data1 = sim.readCustomDataBlock(lidar_handles[np.where(quadrotor.attribute_num == 2)[0][0]][0], f'scan_ranges{np.where(quadrotor.attribute_num == 2)[0][0]}1')
-        tmp_packed_data2 = sim.readCustomDataBlock(lidar_handles[np.where(quadrotor.attribute_num == 2)[0][0]][1], f'scan_ranges{np.where(quadrotor.attribute_num == 2)[0][0]}2')
+        tmp_packed_data1 = sim.readCustomDataBlock(lidar_handles[np.where(quadrotor.attribute_num == 2)[0][0]][0], f'scan_ranges{np.where(quadrotor.attribute_num == 2)[0][0] + 1}1')
+        tmp_packed_data2 = sim.readCustomDataBlock(lidar_handles[np.where(quadrotor.attribute_num == 2)[0][0]][1], f'scan_ranges{np.where(quadrotor.attribute_num == 2)[0][0] + 1}2')
         # 数値データに変換
         behind_lidar_data1 = client.unpackFloatTable(tmp_packed_data1) if tmp_packed_data1 else []
         behind_lidar_data2 = client.unpackFloatTable(tmp_packed_data2) if tmp_packed_data2 else []
@@ -302,7 +302,7 @@ for loop in range(0, simulation_time):
         behind_angle = sim.getObjectOrientation(quadcopter_handles[np.where(quadrotor.attribute_num == 2)[0][0]], -1)
         time.sleep(0.05)
         # 障害物があるかの判定
-        is_obstacle = HelperMethod.ObstacleDetection(behind_lidar_data1, behind_lidar_data2, behind_angle, stepnum, quadrotor, simulation_time, np.where(quadrotor.attribute_num == 2)[0][0] ,quadcopter_counts, is_obstacle, goal_for_leader[0:2, change_num - 1])
+        is_obstacle = HelperMethod.ObstacleDetection(behind_lidar_data1, behind_lidar_data2, behind_angle, stepnum, quadrotor, simulation_time, np.where(quadrotor.attribute_num == 2)[0][0] ,quadcopter_counts, goal_for_leader[0:2, change_num - 1])
     
     # 障害物の有無によりフォーメーションを指定
     if is_obstacle:
