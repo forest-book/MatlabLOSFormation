@@ -317,14 +317,26 @@ for loop in range(0, simulation_time):
     #    リーダ機の次ステップにおける座標の計算を行う
     # }
 
-    # リーダから見た目標地点のベクトル
-    goal_distance = goal_for_leader[:, change_num - 1] - quadrotor.coordinate[:, loop, quad_leader_num]
-    # リーダの速度を算出,計算の仕方は単位ベクトル×スカラーの速さ
-    quadrotor.speed[:, loop, quad_leader_num] = goal_distance / np.linalg.norm(goal_distance) * leader_speed
-    quadrotor.speed_dir[:, loop, quad_leader_num] = quadrotor.speed[:, loop, quad_leader_num] / np.linalg.norm(quadrotor.speed[:, loop, quad_leader_num])
+    # 目標点インデックスの範囲を保証
+    goal_idx = max(0, min(change_num - 1, goal_for_leader.shape[1] - 1))
+    goal_distance = goal_for_leader[:, goal_idx] - quadrotor.coordinate[:, loop, quad_leader_num]
 
-    # リーダの次ステップでの座標を算出
+    norm_goal_distance = np.linalg.norm(goal_distance)
+    if norm_goal_distance == 0:
+        quadrotor.speed[:, loop, quad_leader_num] = 0
+        quadrotor.speed_dir[:, loop, quad_leader_num] = 0
+    else:
+        quadrotor.speed[:, loop, quad_leader_num] = goal_distance / norm_goal_distance * leader_speed
+        quadrotor.speed_dir[:, loop, quad_leader_num] = quadrotor.speed[:, loop, quad_leader_num] / np.linalg.norm(quadrotor.speed[:, loop, quad_leader_num])
+
     quadrotor.coordinate[:, loop + 1, quad_leader_num] = quadrotor.coordinate[:, loop, quad_leader_num] + dt * quadrotor.speed[:, loop, quad_leader_num]
+
+    # デバッグ用ログ
+    print(f"Current goal index: {goal_idx}, Goal position: {goal_for_leader[:, goal_idx]}")
+    print(f"Leader position: {quadrotor.coordinate[:, loop, quad_leader_num]}")
+    print(f"Goal distance: {goal_distance}, Norm: {norm_goal_distance}")
+    print(f"Leader speed: {quadrotor.speed[:, loop, quad_leader_num]}")
+    print(f"Leader index: {quad_leader_num}, Attribute numbers: {quadrotor.attribute_num}")
 
     # ゼロ除算回避で0を直接代入している
     quadrotor.relative_distance[:, loop, quad_leader_num] = 0
