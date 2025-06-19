@@ -46,8 +46,13 @@ class HelperMethod:
 
         if ranges1 is None or len(ranges1) == 0:
             ranges1 = np.zeros(stepnum)
+        else:
+            ranges1 = np.array(ranges1)  # 追加: list→np.ndarray変換
+
         if ranges2 is None or len(ranges2) == 0:
             ranges2 = np.zeros(stepnum)
+        else:
+            ranges2 = np.array(ranges2)  # 追加: list→np.ndarray変換
 
         # 障害物が検知されたインデックス
         index1 = np.where(ranges1 < 4)[0]

@@ -262,6 +262,11 @@ for loop in range(0, simulation_time):
 
     # リーダ属性のクワッドロータの機体番号を取得
     quad_leader_num = np.where(quadrotor.attribute_num == 1)[0][0]
+    print(f"quad leader num: {quad_leader_num}")
+    print(np.where(quadrotor.attribute_num == 2)[0][0])
+    print(np.where(quadrotor.attribute_num == 3)[0][0])
+    print(np.where(quadrotor.attribute_num == 4)[0][0])
+    print(np.where(quadrotor.attribute_num == 5)[0][0])
 
     # 障害物センサの処理
     # {
@@ -274,16 +279,16 @@ for loop in range(0, simulation_time):
     # 通常の障害物検知
 
     # リーダ機の障害物センサの値を取得する
-    packed_data1 = sim.readCustomDataBlock(lidar_handles[quad_leader_num][0], f'scan_ranges{quad_leader_num}1')
-    packed_data2 = sim.readCustomDataBlock(lidar_handles[quad_leader_num][1], f'scan_ranges{quad_leader_num}2')
+    packed_data1 = sim.readCustomDataBlock(lidar_handles[quad_leader_num][0], f'scan_ranges{quad_leader_num + 1}1')
+    packed_data2 = sim.readCustomDataBlock(lidar_handles[quad_leader_num][1], f'scan_ranges{quad_leader_num + 1}2')
     # 数値データに変換
-    lidar_data1 = client.unpackFloatTable(packed_data1) if packed_data1 else []
-    lidar_data2 = client.unpackFloatTable(packed_data2) if packed_data2 else []
+    lidar_data1:list = client.unpackFloatTable(packed_data1) if packed_data1 else []
+    lidar_data2:list = client.unpackFloatTable(packed_data2) if packed_data2 else []
     # リーダ機の姿勢の取得
     leader_angle = sim.getObjectOrientation(quadcopter_handles[quad_leader_num], -1)
     time.sleep(0.05)
     # 障害物があるかの判定
-    is_obstacle = HelperMethod.ObstacleDetection(lidar_data1, lidar_data2, leader_angle, stepnum, quadrotor, simulation_time, quad_leader_num ,quadcopter_counts, is_obstacle, goal_for_leader[0:2, change_num])
+    is_obstacle = HelperMethod.ObstacleDetection(lidar_data1, lidar_data2, leader_angle, stepnum, quadrotor, simulation_time, quad_leader_num ,quadcopter_counts, is_obstacle, goal_for_leader[0:2, change_num - 1])
 
     # チョークポイントを抜けたかの判定
     if not is_obstacle and current_formation == 1:
@@ -297,7 +302,7 @@ for loop in range(0, simulation_time):
         behind_angle = sim.getObjectOrientation(quadcopter_handles[np.where(quadrotor.attribute_num == 2)[0][0]], -1)
         time.sleep(0.05)
         # 障害物があるかの判定
-        is_obstacle = HelperMethod.ObstacleDetection(behind_lidar_data1, behind_lidar_data2, behind_angle, stepnum, quadrotor, simulation_time, np.where(quadrotor.attribute_num == 2)[0][0] ,quadcopter_counts, is_obstacle, goal_for_leader[0:2, change_num])
+        is_obstacle = HelperMethod.ObstacleDetection(behind_lidar_data1, behind_lidar_data2, behind_angle, stepnum, quadrotor, simulation_time, np.where(quadrotor.attribute_num == 2)[0][0] ,quadcopter_counts, is_obstacle, goal_for_leader[0:2, change_num - 1])
     
     # 障害物の有無によりフォーメーションを指定
     if is_obstacle:
@@ -313,7 +318,7 @@ for loop in range(0, simulation_time):
     # }
 
     # リーダから見た目標地点のベクトル
-    goal_distance = goal_for_leader[:, change_num] - quadrotor.coordinate[:, loop, quad_leader_num]
+    goal_distance = goal_for_leader[:, change_num - 1] - quadrotor.coordinate[:, loop, quad_leader_num]
     # リーダの速度を算出,計算の仕方は単位ベクトル×スカラーの速さ
     quadrotor.speed[:, loop, quad_leader_num] = goal_distance / np.linalg.norm(goal_distance) * leader_speed
     quadrotor.speed_dir[:, loop, quad_leader_num] = quadrotor.speed[:, loop, quad_leader_num] / np.linalg.norm(quadrotor.speed[:, loop, quad_leader_num])
@@ -335,7 +340,7 @@ for loop in range(0, simulation_time):
         # }
         for i in range(0, quadcopter_counts - 1):
              # 属性番号がi+1の機体のインデックスを取得
-            follower_idx = np.where(quadrotor.attribute_num == i + 1 + 1)[0][0]  # i+1+1: MATLABのi+1, Pythonは0始まり
+            follower_idx = np.where(quadrotor.attribute_num == i + 2)[0][0]  # i+1+1: MATLABのi+1, Pythonは0始まり
             quadrotor.relative_distance[:, loop, follower_idx] =  quadrotor.coordinate[:, loop, quad_leader_num] \
                                                                     - quadrotor.coordinate[:, loop, follower_idx]
             quadrotor.unit_relative_distance[0:2, loop, follower_idx] = quadrotor.relative_distance[0:2, loop, follower_idx] \
@@ -440,7 +445,7 @@ for loop in range(0, simulation_time):
         
     elif np.linalg.norm(goal_distance) <= 30:
         # 目標地点到達した時間を記録(目標地点を表示する際に使用)
-        arrive_time[change_num, 0] = loop
+        arrive_time[change_num - 1, 0] = loop
         # 次の目標地点移る
         change_num = change_num + 1
         # フォーメーションの指定
@@ -459,11 +464,11 @@ for loop in range(0, simulation_time):
                 for i in range(0, quadcopter_counts):
                     completed_coordinate[:, i] = quadrotor.coordinate[:, loop, i]
             
-            is_completed = True
-            change_num = change_num - 1
+                is_completed = True
+            change_num = goal_num
 
         else:
-            quadrotor.attribute_num[:] = HelperMethod.ChangeLeader(quadrotor, loop, quadcopter_counts, goal_for_leader, change_num)
+            quadrotor.attribute_num[:] = HelperMethod.ChangeLeader(quadrotor, loop, quadcopter_counts, goal_for_leader, change_num - 1)
             for i in range(0, quadcopter_counts):
                 completed_coordinate[:, i] = quadrotor.coordinate[:, loop, i]
         
