@@ -476,7 +476,7 @@ for loop in range(0, simulation_time):
         # 最初に例外になった時の座標を保存する(停留のため)
         if not is_exception_raised:
             for k in range(0, quadcopter_counts):
-                exception_coordinate[:, k] = quadrotor.coordinate[:, k]
+                exception_coordinate[:, k] = quadrotor.coordinate[:, loop, k]
             is_exception_raised = True
         
         # 全クワッドローダーを停留させる
