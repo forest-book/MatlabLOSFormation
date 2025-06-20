@@ -46,7 +46,7 @@ class SimulatorInterface:
         print("Setting up object handles...")
         self.quad_handles = [self.sim.getObject(f'/{name}') for name in quad_names]
         # targetはドローンの位置を示すインジケータ
-        self.target_handles = [self.sim.getObject(f'/target{name.count()}') for name in quad_names]
+        self.target_handles = [self.sim.getObject(f'/target[{i}]') for i in range(len(quad_names))]
         self.goal_cylinder_handle = self.sim.getObject(f'/{goal_cylinder_name}')
         print(f"Handles loaded for {len(self.quad_handles)} quadcopters.")
 
