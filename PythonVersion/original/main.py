@@ -92,6 +92,12 @@ class MainController:
         finally:
             self.sim.stop_simulation()
 
+    def debug(self):
+        """デバッグ用のメソッド"""
+        for quad in self.quads:
+            print(f"Quad {quad.id} - Position: {quad.position}, Velocity: {quad.velocity}, Role: {quad.role}")
+        self.sim.stop_simulation()
+
 
 if __name__ == '__main__':
     # パラメータを一元管理
