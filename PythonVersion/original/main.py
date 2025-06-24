@@ -30,7 +30,7 @@ class MainController:
 
     def initialize(self):
         """システムの初期化"""
-        self.sim.connect()
+        #self.sim.connect()
         
         quad_names = [f'Quadcopter[{i}]' for i in range(self.params['quad_num'])]
         self.sim.setup_handles(quad_names, 'Cylinder')
@@ -52,9 +52,10 @@ class MainController:
 
     def run(self):
         """メインループの実行"""
-        self.initialize()
+        self.sim.connect()
         self.sim.start_simulation()
-
+        self.initialize()
+        
         try:
             for loop in range(self.params['loop_num']):
                 # 1. シミュレータから全機体の状態を取得・更新
@@ -83,6 +84,7 @@ class MainController:
 
                 # 4. 新しい位置をシミュレータに反映
                 self.sim.set_all_quad_positions(self.quads)
+                self.sim.step_simulation()
                 
                 print(f"Loop {loop+1}/{self.params['loop_num']}")
                 time.sleep(0.05)
@@ -106,7 +108,7 @@ if __name__ == '__main__':
         'loop_num': 5000,
         'leader_idx': 0,
         'dt': 1.0,
-        'distance_threshold': 80.0,
+        'distance_threshold': 10.0,
         'leader_speed': 5.0,
         'leader_goal': np.array([500.0, -15.0, 250.0]),
         'k0l': np.array([[5, 200], [5, 200], [5, 200], [5, 200]]),

@@ -22,7 +22,7 @@ class SimulatorInterface:
         """シミュレータへの接続を試みる"""
         print("Connecting to CoppeliaSim...")
         # 必要に応じてポート番号をシーンに合わせて調整してください
-        # self.client.setStepping(True) # 必要に応じて同期モードを有効にする
+        self.client.setStepping(True) # 必要に応じて同期モードを有効にする
         print("Connected.")
 
     def start_simulation(self):
@@ -45,8 +45,9 @@ class SimulatorInterface:
         """シミュレーション内のオブジェクトハンドルを取得・保持する"""
         print("Setting up object handles...")
         self.quad_handles = [self.sim.getObject(f'/{name}') for name in quad_names]
+        print(len(quad_names))
         # targetはドローンの位置を示すインジケータ
-        self.target_handles = [self.sim.getObject(f'/target[{i}]') for i in range(len(quad_names))]
+        self.target_handles = [self.sim.getObject(f'/target[{i}]') for i in range(0, len(quad_names))]
         self.goal_cylinder_handle = self.sim.getObject(f'/{goal_cylinder_name}')
         print(f"Handles loaded for {len(self.quad_handles)} quadcopters.")
 
@@ -70,3 +71,4 @@ class SimulatorInterface:
         """目標点のインジケータ位置を設定する"""
         sim_pos = (goal_pos / 100.0).tolist()
         self.sim.setObjectPosition(self.goal_cylinder_handle, sim_pos, -1)
+        

@@ -83,33 +83,196 @@ class FollowerStrategy(Strategy):
         # 3. 回避行動中であれば回避速度を優先、そうでなければLOS追従速度を使用
         return avoidance_velocity if is_avoiding else los_velocity
 
+    # def _calculate_los_velocity(self, self_quad: Quadcopter, leader: Quadcopter, formation: Formation, idx: int) -> np.ndarray:
+    #     """論文3.3節のロジック"""
+    #     local_axis = axis_transform(leader.speed_dir)
+        
+    #     # 式(3.4) 目標相対位置Dの計算 (x,y,z軸を列ベクトルとして取得)
+    #     # 進行方向=x軸, y軸=左, z軸=上 となるよう再定義
+    #     ax, ay, az = local_axis[:, 0], local_axis[:, 1], local_axis[:, 2]
+    #     # 論文のΦ(x-rot), Ψ(z-rot)の定義を尊重する
+    #     psi, phi = formation.angles[idx, 0], formation.angles[idx, 1]
+    #     R_x = rot(ax, phi)
+    #     R_z = rot(az, psi)
+    #     D = formation.distances[idx] * (R_x @ R_z @ leader.speed_dir)
+        
+    #     # 式(3.9) フォロワから目標点へのベクトルl
+    #     lt = (leader.position - self_quad.position) + D
+        
+    #     # 式(3.13) hの計算
+    #     h = self.k0l[idx, 0] + self.k0l[idx, 1] / (1 + np.linalg.norm(lt))
+        
+    #     # 式(3.11) 制御入力の方向 Cin_dir の計算
+    #     cin_dir_vec = lt + h * leader.speed_dir
+    #     cin_dir = cin_dir_vec / np.linalg.norm(cin_dir_vec)
+        
+    #     # 式(3.14) 制御入力の大きさ Cin の計算
+    #     dot_val = np.dot(lt, leader.speed_dir)
+    #     cin_mag = np.linalg.norm(leader.velocity) * \
+    #               (1 + (2/np.pi) * self.kps[idx, 0] * np.arctan(np.abs(dot_val) / self.kps[idx, 1]))
+        
+    #     return cin_mag * cin_dir
+    
+    # def _calculate_los_velocity(self, self_quad: Quadcopter, leader: Quadcopter, formation: Formation, idx: int) -> np.ndarray:
+    #     """
+    #     論文3.3節のロジックに基づき、より安定的で直感的な方法でDベクトルを計算する。
+    #     """
+    #     # 進行方向=x軸, y軸=左, z軸=上 とするローカル座標系を取得
+    #     local_axis = axis_transform(leader.speed_dir)
+        
+    #     # --- Dベクトル計算ロジックを全面的に修正 ---
+    #     # 論文のΦ(phi), Ψ(psi)の定義を、リーダーのローカル座標系での逐次回転として解釈し、
+    #     # まずローカル座標系での目標位置ベクトルD_localを計算する。
+
+    #     psi, phi = formation.angles[idx, 0], formation.angles[idx, 1]
+    #     dist = formation.distances[idx]
+
+    #     # 1. リーダーの前方 dist の点を基準ベクトルとする (ローカルx軸方向)
+    #     # 2. それをローカルz軸周りにpsi回転 (ヨー回転)
+    #     x_prime = dist * np.cos(psi)
+    #     y_prime = dist * np.sin(psi)
+    #     z_prime = 0.0
+        
+    #     # 3. さらにそれをローカルx軸周りにphi回転 (ピッチ/ロール回転)
+    #     D_local_x = x_prime
+    #     D_local_y = y_prime * np.cos(phi) - z_prime * np.sin(phi)
+    #     D_local_z = y_prime * np.sin(phi) + z_prime * np.cos(phi)
+        
+    #     D_local = np.array([D_local_x, D_local_y, D_local_z])
+        
+    #     # 4. ローカル座標系のDベクトルを、基底行列を使ってワールド座標系に変換
+    #     D_world = local_axis @ D_local
+        
+    #     # --- ここから下の計算は変更なし ---
+        
+    #     # 式(3.9) フォロワから目標点へのベクトルl
+    #     lt = (leader.position - self_quad.position) + D_world
+        
+    #     # 式(3.13) hの計算
+    #     h = self.k0l[idx, 0] + self.k0l[idx, 1] / (1 + np.linalg.norm(lt))
+        
+    #     # 式(3.11) 制御入力の方向 Cin_dir の計算
+    #     cin_dir_vec = lt + h * leader.speed_dir
+    #     norm_cin_dir = np.linalg.norm(cin_dir_vec)
+    #     # ゼロ除算を避ける
+    #     if norm_cin_dir < 1e-8:
+    #         cin_dir = np.zeros(3)
+    #     else:
+    #         cin_dir = cin_dir_vec / norm_cin_dir
+        
+    #     # 式(3.14) 制御入力の大きさ Cin の計算
+    #     dot_val = np.dot(lt, leader.speed_dir)
+    #     # kpsの除数が0にならないように保護
+    #     kps_div = self.kps[idx, 1] if self.kps[idx, 1] != 0 else 1e-8
+    #     cin_mag = np.linalg.norm(leader.velocity) * \
+    #               (1 + (2/np.pi) * self.kps[idx, 0] * np.arctan(np.abs(dot_val) / kps_div))
+        
+    #     return cin_mag * cin_dir
+
+    # def _calculate_los_velocity(self, self_quad: Quadcopter, leader: Quadcopter, formation: Formation, idx: int) -> np.ndarray:
+    #     """
+    #     論文3.3節のロジックに基づき、座標系の定義と一致した、安定的で正しいDベクトル計算を行う。
+    #     """
+    #     # 進行方向=x軸, y軸=左, z軸=上 とするローカル座標系を取得
+    #     local_axis = axis_transform(leader.speed_dir)
+        
+    #     # --- Dベクトル計算ロジックを全面的に修正 ---
+    #     # 論文のΦ(phi), Ψ(psi)の定義を、リーダーのローカル座標系での逐次回転として解釈し、
+    #     # まずローカル座標系での目標位置ベクトルD_localを計算する。
+
+    #     psi, phi = formation.angles[idx, 0], formation.angles[idx, 1]
+    #     dist = formation.distances[idx]
+
+    #     # 1. リーダーの前方 dist の点を基準ベクトルとする (ローカルx軸方向)
+    #     # 2. それをローカルz軸周りにpsi回転 (ヨー回転)
+    #     #    ローカル座標系でのベクトル [dist, 0, 0] をz軸周りに回転させる
+    #     x_prime = dist * np.cos(psi)
+    #     y_prime = dist * np.sin(psi)
+        
+    #     # 3. さらにそれをローカルx軸周りにphi回転 (ピッチ/ロール回転)
+    #     #    ベクトル [x_prime, y_prime, 0] をx軸周りに回転させる
+    #     D_local_x = x_prime
+    #     D_local_y = y_prime * np.cos(phi)
+    #     D_local_z = y_prime * np.sin(phi)
+        
+    #     D_local = np.array([D_local_x, D_local_y, D_local_z])
+        
+    #     # 4. ローカル座標系のDベクトルを、基底行列を使ってワールド座標系に変換
+    #     D_world = local_axis @ D_local
+        
+    #     # --- ここから下の計算は変更なし ---
+        
+    #     # 式(3.9) フォロワから目標点へのベクトルl
+    #     lt = (leader.position - self_quad.position) + D_world
+        
+    #     # 式(3.13) hの計算
+    #     h = self.k0l[idx, 0] + self.k0l[idx, 1] / (1 + np.linalg.norm(lt))
+        
+    #     # 式(3.11) 制御入力の方向 Cin_dir の計算
+    #     cin_dir_vec = lt + h * leader.speed_dir
+    #     norm_cin_dir = np.linalg.norm(cin_dir_vec)
+    #     # ゼロ除算を避ける
+    #     if norm_cin_dir < 1e-8:
+    #         cin_dir = np.zeros(3)
+    #     else:
+    #         cin_dir = cin_dir_vec / norm_cin_dir
+        
+    #     # 式(3.14) 制御入力の大きさ Cin の計算
+    #     dot_val = np.dot(lt, leader.speed_dir)
+    #     # kpsの除数が0にならないように保護
+    #     kps_div = self.kps[idx, 1] if self.kps[idx, 1] != 0 else 1e-8
+    #     cin_mag = np.linalg.norm(leader.velocity) * \
+    #               (1 + (2/np.pi) * self.kps[idx, 0] * np.arctan(np.abs(dot_val) / kps_div))
+        
+    #     return cin_mag * cin_dir
+
     def _calculate_los_velocity(self, self_quad: Quadcopter, leader: Quadcopter, formation: Formation, idx: int) -> np.ndarray:
-        """論文3.3節のロジック"""
+        """
+        【最終確定版】Dベクトルの計算を、不安定な逐次回転から安定的な球面座標系解釈に変更。
+        """
+        # 進行方向=x軸, y軸=左, z軸=上 とするローカル座標系を取得
         local_axis = axis_transform(leader.speed_dir)
         
-        # 式(3.4) 目標相対位置Dの計算 (x,y,z軸を列ベクトルとして取得)
-        # 進行方向=x軸, y軸=左, z軸=上 となるよう再定義
-        ax, ay, az = local_axis[:, 0], local_axis[:, 1], local_axis[:, 2]
-        # 論文のΦ(x-rot), Ψ(z-rot)の定義を尊重する
+        # --- Dベクトル計算を、球面座標系を用いて再定義 ---
+        
         psi, phi = formation.angles[idx, 0], formation.angles[idx, 1]
-        R_x = rot(ax, phi)
-        R_z = rot(az, psi)
-        D = formation.distances[idx] * (R_x @ R_z @ leader.speed_dir)
+        dist = formation.distances[idx]
+
+        # 1. 球面座標を用いて、リーダーのローカル座標系における目標位置ベクトルD_localを直接計算
+        #    psi: 方位角 (x-y平面内、x軸からy軸(左)方向への角度)
+        #    phi: 仰角 (x-y平面からz軸(上)方向への角度)
+        D_local_x = dist * np.cos(phi) * np.cos(psi)
+        D_local_y = dist * np.cos(phi) * np.sin(psi)
+        D_local_z = dist * np.sin(phi)
+        
+        D_local = np.array([D_local_x, D_local_y, D_local_z])
+        
+        # 2. ローカル座標系のDベクトルを、基底行列を使ってワールド座標系に変換
+        D_world = local_axis @ D_local
+        
+        # --- ここから下の計算は変更なし ---
         
         # 式(3.9) フォロワから目標点へのベクトルl
-        lt = (leader.position - self_quad.position) + D
+        lt = (leader.position - self_quad.position) + D_world
         
         # 式(3.13) hの計算
         h = self.k0l[idx, 0] + self.k0l[idx, 1] / (1 + np.linalg.norm(lt))
         
         # 式(3.11) 制御入力の方向 Cin_dir の計算
         cin_dir_vec = lt + h * leader.speed_dir
-        cin_dir = cin_dir_vec / np.linalg.norm(cin_dir_vec)
+        norm_cin_dir = np.linalg.norm(cin_dir_vec)
+        # ゼロ除算を避ける
+        if norm_cin_dir < 1e-8:
+            cin_dir = np.zeros(3)
+        else:
+            cin_dir = cin_dir_vec / norm_cin_dir
         
         # 式(3.14) 制御入力の大きさ Cin の計算
         dot_val = np.dot(lt, leader.speed_dir)
+        # kpsの除数が0にならないように保護
+        kps_div = self.kps[idx, 1] if self.kps[idx, 1] != 0 else 1e-8
         cin_mag = np.linalg.norm(leader.velocity) * \
-                  (1 + (2/np.pi) * self.kps[idx, 0] * np.arctan(np.abs(dot_val) / self.kps[idx, 1]))
+                  (1 + (2/np.pi) * self.kps[idx, 0] * np.arctan2(np.abs(dot_val) , kps_div))
         
         return cin_mag * cin_dir
 
