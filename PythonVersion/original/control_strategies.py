@@ -248,12 +248,13 @@ class FollowerStrategy(Strategy):
         D_local = np.array([D_local_x, D_local_y, D_local_z])
         
         # 2. ローカル座標系のDベクトルを、基底行列を使ってワールド座標系に変換
-        D_world = local_axis @ D_local
+        #D_world = local_axis @ D_local
         
         # --- ここから下の計算は変更なし ---
         
         # 式(3.9) フォロワから目標点へのベクトルl
-        lt = (leader.position - self_quad.position) + D_world
+        #lt = (leader.position - self_quad.position) + D_world
+        lt = (leader.position - self_quad.position) + D_local
         
         # 式(3.13) hの計算
         h = self.k0l[idx, 0] + self.k0l[idx, 1] / (1 + np.linalg.norm(lt))
