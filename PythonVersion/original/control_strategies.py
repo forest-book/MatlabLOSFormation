@@ -72,6 +72,11 @@ class FollowerStrategy(Strategy):
         formation = kwargs['formation']
         follower_list_idx = kwargs['follower_idx'] # このフォロワーがリストの何番目か
 
+        # リーダーの速度がほぼゼロ（停止している）場合、フォロワーも停止する
+        # 物理シミュレーションでは完全に0にならない場合を考慮し、微小な閾値を設ける
+        if np.linalg.norm(leader.velocity) < 0.1:
+            return np.zeros(3)
+
         # 1. LOS追従速度の計算
         los_velocity = self._calculate_los_velocity(self_quad, leader, formation, follower_list_idx)
         

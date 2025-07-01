@@ -15,6 +15,7 @@ class MainController:
         self.quads: List[Quadcopter] = []
         self.leader: Quadcopter = None
         self.followers: List[Quadcopter] = []
+        self.goal_reached = False
         
         # ストラテジーのインスタンス化
         self.leader_strategy = LeaderStrategy()
@@ -28,8 +29,6 @@ class MainController:
 
     def initialize(self):
         """システムの初期化"""
-        #self.sim.connect()
-        
         quad_names = [f'Quadcopter[{i}]' for i in range(self.params['quad_num'])]
         self.sim.setup_handles(quad_names, 'Cylinder')
 
@@ -56,31 +55,46 @@ class MainController:
         
         try:
             for loop in range(self.params['loop_num']):
-                # 1. シミュレータから全機体の状態を取得・更新
-                sim_states = self.sim.get_all_quad_states()
-                for i, quad in enumerate(self.quads):
-                    quad.update_state(sim_states[i]['position'], sim_states[i]['velocity'])
+                # 1. ゴール到達前のみ、シミュレータから全機体の状態を取得・更新
+                if not self.goal_reached:
+                    sim_states = self.sim.get_all_quad_states()
+                    for i, quad in enumerate(self.quads):
+                        quad.update_state(sim_states[i]['position'], sim_states[i]['velocity'])
 
-                # 2. 全機体の次の速度を計算
-                for i, quad in enumerate(self.quads):
-                    strategy = self.strategies[quad.role]
-                    
-                    # ストラテジーが必要とする情報をkwargsで渡す
-                    strategy_kwargs = {
-                        'all_quads': self.quads,
-                        'goal': self.params['leader_goal'],
-                        'max_speed': self.params['leader_speed'],
-                        'leader': self.leader,
-                        'formation': V_SHAPE_FORMATION,
-                        'follower_idx': self.followers.index(quad) if quad.role == Role.FOLLOWER else -1
-                    }
-                    quad.next_velocity = strategy.calculate_velocity(quad, **strategy_kwargs)
-                
-                # 3. 計算結果に基づき、内部状態としての位置を更新
+                # 2. ゴール到達を判定し、フラグを立てる
+                if not self.goal_reached:
+                    dist_to_goal = np.linalg.norm(self.leader.position - self.params['leader_goal'])
+                    # リーダーが目標から10cm以内に入ったらゴール到達とみなす
+                    if dist_to_goal < 10.0:
+                        print(f"--- Goal reached at loop {loop+1}. Holding positions. ---")
+                        self.goal_reached = True
+
+                # 3. 速度を計算する（ゴール到達後はゼロを設定）
+                if self.goal_reached:
+                    print("finish")
+                    # ゴール到達後は、全機の速度をゼロにしてその場に停留させる
+                    for quad in self.quads:
+                        quad.next_velocity = np.zeros(3)
+                else:
+                    for i, quad in enumerate(self.quads):
+                        strategy = self.strategies[quad.role]
+                        
+                        # ストラテジーが必要とする情報をkwargsで渡す
+                        strategy_kwargs = {
+                            'all_quads': self.quads,
+                            'goal': self.params['leader_goal'],
+                            'max_speed': self.params['leader_speed'],
+                            'leader': self.leader,
+                            'formation': V_SHAPE_FORMATION,
+                            'follower_idx': self.followers.index(quad) if quad.role == Role.FOLLOWER else -1
+                        }
+                        quad.next_velocity = strategy.calculate_velocity(quad, **strategy_kwargs)
+
+                # 4. 内部の位置情報を更新（ゴール到達後は、速度ゼロで更新されるため位置は変わらない）
                 for quad in self.quads:
                     quad.update_position(self.params['dt'])
 
-                # 4. 新しい位置をシミュレータに反映
+                # 5. 新しい位置をシミュレータに反映（ゴール到達後は、固定された位置が送られ続ける）
                 self.sim.set_all_quad_positions(self.quads)
                 self.sim.step_simulation()
                 
@@ -106,9 +120,9 @@ if __name__ == '__main__':
         'loop_num': 5000,
         'leader_idx': 0,
         'dt': 1.0,
-        'distance_threshold': 80.0,
+        'distance_threshold': 60.0,
         'leader_speed': 5.0,
-        'leader_goal': np.array([600.0, -15.0, 250.0]),
+        'leader_goal': np.array([500.0, -15.0, 250.0]),
         'k0l': np.array([[5, 200], [5, 200], [5, 200], [5, 200]]),
         'kps': np.array([[1, 1], [1, 1], [1, 1], [1, 1]]),
         'initial_positions': np.array([
