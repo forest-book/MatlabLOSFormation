@@ -1,5 +1,3 @@
-# main.py
-
 import numpy as np
 import time
 from typing import List

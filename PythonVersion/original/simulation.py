@@ -1,5 +1,3 @@
-# simulation.py
-
 import time
 from coppeliasim_zmqremoteapi_client import RemoteAPIClient
 from typing import List
