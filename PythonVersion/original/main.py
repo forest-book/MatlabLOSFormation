@@ -85,7 +85,7 @@ class MainController:
                             'goal': self.params['leader_goal'],
                             'max_speed': self.params['leader_speed'],
                             'leader': self.leader,
-                            'formation': LINE_FORMATION,
+                            'formation': V_SHAPE_FORMATION,
                             'follower_idx': self.followers.index(quad) if quad.role == Role.FOLLOWER else -1
                         }
                         quad.next_velocity = strategy.calculate_velocity(quad, **strategy_kwargs)
@@ -119,9 +119,9 @@ if __name__ == '__main__':
         'quad_num': 5,
         'loop_num': 5000,
         'leader_idx': 0,
-        'dt': 1.0,
-        'distance_threshold': 60.0,
-        'leader_speed': 5.0,
+        'dt': 0.5,
+        'distance_threshold': 80.0,
+        'leader_speed': 10.0,
         'leader_goal': np.array([500.0, -15.0, 250.0]),
         'k0l': np.array([[5, 200], [5, 200], [5, 200], [5, 200]]),
         'kps': np.array([[1, 1], [1, 1], [1, 1], [1, 1]]),
