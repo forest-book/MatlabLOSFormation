@@ -108,9 +108,9 @@ if __name__ == '__main__':
         'loop_num': 5000,
         'leader_idx': 0,
         'dt': 1.0,
-        'distance_threshold': 10.0,
+        'distance_threshold': 80.0,
         'leader_speed': 5.0,
-        'leader_goal': np.array([500.0, -15.0, 250.0]),
+        'leader_goal': np.array([600.0, -15.0, 250.0]),
         'k0l': np.array([[5, 200], [5, 200], [5, 200], [5, 200]]),
         'kps': np.array([[1, 1], [1, 1], [1, 1], [1, 1]]),
         'initial_positions': np.array([
