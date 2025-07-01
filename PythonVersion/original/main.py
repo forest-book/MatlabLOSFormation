@@ -4,7 +4,7 @@ from typing import List
 
 from simulation import SimulatorInterface
 from swarm_components import Quadcopter, Role
-from formations import V_SHAPE_FORMATION
+from formations import V_SHAPE_FORMATION, LINE_FORMATION
 from control_strategies import Strategy, LeaderStrategy, FollowerStrategy
 
 class MainController:
@@ -85,7 +85,7 @@ class MainController:
                             'goal': self.params['leader_goal'],
                             'max_speed': self.params['leader_speed'],
                             'leader': self.leader,
-                            'formation': V_SHAPE_FORMATION,
+                            'formation': LINE_FORMATION,
                             'follower_idx': self.followers.index(quad) if quad.role == Role.FOLLOWER else -1
                         }
                         quad.next_velocity = strategy.calculate_velocity(quad, **strategy_kwargs)
