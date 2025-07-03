@@ -36,4 +36,3 @@ class Quadcopter:
     def update_position(self, dt: float):
         """計算された次の速度に基づき、位置を更新する"""
         self.position += self.next_velocity * dt
-        
